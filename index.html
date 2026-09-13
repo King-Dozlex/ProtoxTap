@@ -1,12 +1,129 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ProtoxTap</title>
+    <meta name="description" content="ProtoxTap makes leaving a review as easy as tapping your phone. NFC review tags for independent businesses.">
+    <title>ProtoxTap | Turn a tap into a review</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>🔥 PROTOXTAP TEST 🔥</h1>
-    <p>If you can see this, the correct file is being deployed.</p>
+    <div class="noise" aria-hidden="true"></div>
+    <header class="site-header" id="top">
+        <nav class="nav shell" aria-label="Main navigation">
+            <a class="brand" href="#top" aria-label="ProtoxTap home"><span class="brand-mark">P</span><span>Protox<span class="brand-tap">Tap</span></span></a>
+            <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-menu"><span></span><span></span><span></span><span class="sr-only">Open menu</span></button>
+            <div class="site-menu" id="site-menu">
+                <a href="#how-it-works">How it works</a>
+                <a href="#benefits">Benefits</a>
+                <a class="webpages-link" href="https://protox-webpages.com" target="_blank" rel="noopener">Websites <span aria-hidden="true">↗</span></a>
+                <a href="#pricing">Pricing</a>
+                <a href="#faq">FAQ</a>
+                <a class="button button-small button-accent" href="#pricing">Get your ProtoxTap <span aria-hidden="true">↗</span></a>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero shell">
+            <div class="hero-copy reveal">
+                <p class="eyebrow"><span class="status-dot"></span> Protox / For local business</p>
+                <h1>Turn a tap<br><em>into a review.</em></h1>
+                <p class="hero-intro">ProtoxTap is an NFC review tag for independent businesses. Customers tap their phone and go straight to your Google review page.</p>
+                <div class="hero-actions">
+                    <a class="button button-accent" href="#pricing">Get your ProtoxTap <span aria-hidden="true">↗</span></a>
+                    <a class="text-link" href="#how-it-works"><span class="play-icon">▶</span> See how it works</a>
+                </div>
+                <div class="hero-note"><span class="tiny-check">✓</span> From £5/month · No app · Made for counters, tills and tables</div>
+            </div>
+            <div class="hero-visual reveal reveal-delay" aria-label="A ProtoxTap NFC review tag product visual">
+                <div class="hero-orbit orbit-one"></div><div class="hero-orbit orbit-two"></div>
+                <div class="hero-product product-card" data-tilt>
+                    <div class="product-shine"></div>
+                    <div class="product-top"><span class="product-logo">P<span>t</span></span><span class="product-type">NFC / 01</span></div>
+                    <div class="product-center"><div class="nfc-symbol"><i></i><i></i><i></i></div><span>tap to review</span></div>
+                    <div class="product-bottom"><span>ProtoxTap</span><span class="product-signal">)))</span></div>
+                </div>
+                <div class="floating-label label-location"><span class="label-line"></span><span>places<br><b>good timing</b></span></div>
+                <div class="floating-label label-nfc"><span class="label-line"></span><span>NFC<br><b>ready</b></span></div>
+                <div class="hero-caption"><span>01</span><span>THE REVIEW TAG</span><span class="caption-line"></span></div>
+            </div>
+            <div class="scroll-cue"><span>Scroll to explore</span><span class="scroll-line"></span></div>
+        </section>
+
+        <section class="signal-strip" aria-label="Product summary">
+            <div class="shell signal-inner"><span>For barbers</span><span class="signal-cross">+</span><span>cafés</span><span class="signal-cross">+</span><span>salons</span><span class="signal-cross">+</span><span>everywhere local happens</span></div>
+        </section>
+
+        <section class="how section shell" id="how-it-works">
+            <div class="section-heading reveal"><p class="eyebrow">01 / The simple bit</p><h2>From counter<br>to <em>conversation.</em></h2><p>Physical touchpoint. Digital destination. A tiny piece of technology that meets your customers exactly where they are.</p></div>
+            <div class="demo-stage reveal reveal-delay" data-demo>
+                <div class="demo-progress"><span class="progress-fill"></span></div>
+                <div class="demo-labels"><span>customer</span><span>interaction</span><span>result</span></div>
+                <div class="demo-scene">
+                    <div class="demo-phone"><div class="phone-speaker"></div><div class="phone-screen"><span class="phone-greeting">Good things<br>happen here.</span><span class="phone-hand">Move closer <i>↘</i></span></div></div>
+                    <div class="demo-arrow">→</div>
+                    <div class="demo-tag product-card"><div class="product-shine"></div><div class="product-top"><span class="product-logo">P<span>t</span></span><span class="product-type">NFC / 01</span></div><div class="product-center"><div class="nfc-symbol"><i></i><i></i><i></i></div><span>tap to review</span></div><div class="product-bottom"><span>ProtoxTap</span><span class="product-signal">)))</span></div></div>
+                    <div class="demo-arrow">→</div>
+                    <div class="review-window"><div class="window-bar"><span></span><span></span><span></span></div><div class="review-content"><span class="google-g">G</span><strong>Leave a review</strong><span class="review-stars">★★★★★</span><span class="review-line"></span><span class="review-line short"></span><button type="button">Write a review</button></div></div>
+                    <div class="nfc-ripple ripple-a"></div><div class="nfc-ripple ripple-b"></div>
+                </div>
+                <div class="demo-status"><span class="status-pip"></span><span class="status-message">Tap the tag to begin</span><span class="status-step">01 / 03</span></div>
+                <button class="demo-replay" type="button">Replay sequence ↻</button>
+            </div>
+        </section>
+
+        <section class="comparison section">
+            <div class="shell comparison-grid">
+                <div class="comparison-heading reveal"><p class="eyebrow">02 / The difference</p><h2>Good intentions<br>don't <em>travel.</em></h2><p>The further away the request gets from the moment, the less likely it is to happen. ProtoxTap keeps it right there.</p></div>
+                <div class="storyboard reveal reveal-delay">
+                    <div class="story old-story"><span class="story-index">01</span><span class="story-tag">THE OLD WAY</span><div class="story-art old-art"><span class="quote-mark">“</span><span>Can you leave<br>us a review?</span><span class="fading-arrow">↗</span></div><p>Customer nods.<br><strong>Customer forgets.</strong></p></div>
+                    <div class="story-divider"><span>or</span></div>
+                    <div class="story new-story"><span class="story-index">02</span><span class="story-tag">THE PROTOXTAP WAY</span><div class="story-art new-art"><div class="mini-tap"><span>Pt</span><b>)))</b></div><span>tap</span><span class="new-arrow">↗</span></div><p>Customer taps.<br><strong>Review arrives.</strong></p></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="benefits section shell" id="benefits">
+            <div class="benefits-top reveal"><div><p class="eyebrow">03 / Why it works</p><h2>Small tag.<br><em>Big difference.</em></h2></div><p>Set it up once, then let the easiest part of your customer experience do the asking.</p></div>
+            <div class="benefits-grid">
+                <article class="benefit benefit-feature reveal"><span class="benefit-number">01</span><div class="benefit-icon icon-spark">✦</div><h3>More reviews</h3><p>Make it easier for happy customers to share what they already think.</p><span class="benefit-foot">good timing wins</span></article>
+                <article class="benefit reveal reveal-delay"><span class="benefit-number">02</span><div class="benefit-icon icon-phone">⌁</div><h3>Zero app required</h3><p>Customers tap with the phone they already have in their hand.</p></article>
+                <article class="benefit reveal reveal-delay-2"><span class="benefit-number">03</span><div class="benefit-icon icon-fast">↯</div><h3>Takes seconds</h3><p>No typing URLs. No searching. No awkward follow-up.</p></article>
+                <article class="benefit reveal"><span class="benefit-number">04</span><div class="benefit-icon icon-clock">◷</div><h3>Works 24/7</h3><p>Once installed, it sits there quietly doing its job.</p></article>
+                <article class="benefit benefit-wide reveal reveal-delay"><span class="benefit-number">05</span><div><h3>Built for independent businesses.</h3><p>Simple, affordable and made for the places where customers and owners know each other by name.</p></div><span class="benefit-arrow">↗</span></article>
+            </div>
+        </section>
+
+        <section class="product-section section">
+            <div class="shell product-layout"><div class="product-large-wrap reveal"><div class="product-large product-card" data-tilt><div class="product-shine"></div><div class="product-top"><span class="product-logo">P<span>t</span></span><span class="product-type">NFC / 01</span></div><div class="product-center"><div class="nfc-symbol"><i></i><i></i><i></i></div><span>tap to review</span></div><div class="product-bottom"><span>ProtoxTap</span><span class="product-signal">)))</span></div></div><span class="product-shadow"></span><div class="product-measure">85mm <span></span> 54mm</div></div><div class="product-copy reveal reveal-delay"><p class="eyebrow">04 / The object</p><h2>Technology you<br>can <em>feel.</em></h2><p>Designed to look at home on a polished counter, a busy till or a quiet reception desk. A small, considered object that makes the next step obvious.</p><a class="text-link" href="#pricing">Make it yours <span aria-hidden="true">↗</span></a><div class="material-note"><span class="material-swatch"></span><span>Soft-touch finish<br><b>Made to be noticed</b></span></div></div></div>
+        </section>
+
+        <section class="ecosystem section shell" id="ecosystem">
+            <div class="ecosystem-heading reveal"><p class="eyebrow">05 / The Protox ecosystem</p><h2>More than a<br><em>review tag.</em></h2><p>Protox gives local businesses the tools they need to look professional online and turn happy customers into new reviews.</p></div>
+            <div class="ecosystem-grid">
+                <article class="ecosystem-card tap-ecosystem reveal"><div class="ecosystem-card-top"><span class="ecosystem-type">TAG</span><span class="ecosystem-index">01 / 02</span></div><div class="ecosystem-card-art"><div class="mini-ecosystem-tag product-card"><span class="product-logo">P<span>t</span></span><span class="product-signal">)))</span></div><span class="art-orbit"></span></div><h3>Protox<span>Tap</span></h3><p class="ecosystem-tagline">Turn a tap into a review.</p><ul><li>NFC review tag</li><li>Custom review destination</li><li>Simple setup</li></ul><a class="text-link" href="#pricing">Explore ProtoxTap <span aria-hidden="true">↗</span></a></article>
+                <article class="ecosystem-card webpages-ecosystem reveal reveal-delay"><div class="ecosystem-card-top"><span class="ecosystem-type">WEBSITE</span><span class="ecosystem-index">02 / 02</span></div><div class="ecosystem-card-art"><div class="mini-browser"><span></span><span></span><span></span><div class="browser-content"><b>your business</b><i></i><i></i></div></div><span class="art-grid"></span></div><h3>Protox<span> Webpages</span></h3><p class="ecosystem-tagline">Give your business a better home online.</p><ul><li>Modern responsive website</li><li>Hosting and updates</li><li>Support when you need it</li></ul><a class="text-link" href="https://protox-webpages.com" target="_blank" rel="noopener">Explore Protox Webpages <span aria-hidden="true">↗</span></a></article>
+            </div>
+        </section>
+
+        <section class="proof section shell" id="proof"><div class="proof-heading reveal"><p class="eyebrow">06 / A space for your voice</p><h2>Next up:<br><em>your review.</em></h2><p>We are just getting started. When ProtoxTap is working its magic for your business, this is where your story will live.</p></div><div class="testimonial-placeholder reveal reveal-delay"><span class="quote-mark">“</span><p>Your customer's review<br>could be here.</p><div class="placeholder-line"></div><span class="placeholder-note">TESTIMONIAL SLOT / 001</span></div></section>
+
+        <section class="bundle section" id="bundle"><div class="shell bundle-layout"><div class="bundle-copy reveal"><p class="eyebrow">07 / The bigger picture</p><h2>Put the two<br><em>together.</em></h2><p>A professional website gets customers through the door. ProtoxTap makes it easier for happy customers to leave a review.</p><span class="bundle-status">COMING SOON / PROTOX PACKAGE</span></div><div class="bundle-visual reveal reveal-delay"><div class="bundle-item bundle-website"><span class="bundle-icon">▦</span><span>WEBSITE</span></div><span class="bundle-symbol">+</span><div class="bundle-item bundle-tag"><span class="bundle-icon">)))</span><span>NFC TAG</span></div><span class="bundle-symbol">=</span><div class="bundle-result"><span>MORE</span><strong>PRESENCE</strong></div><div class="bundle-offer"><span>Website + ProtoxTap</span><strong>From £30/month</strong><small>Future bundle concept · coming soon</small></div></div><a class="button button-accent bundle-cta reveal" href="mailto:hello@protoxtap.co.uk?subject=Build%20my%20business">Build your business <span aria-hidden="true">↗</span></a></div></section>
+
+        <section class="pricing section shell" id="pricing"><div class="pricing-head reveal"><p class="eyebrow">08 / Simple pricing</p><h2>Keep it <em>easy.</em></h2><p>ProtoxTap on its own: one tag, configured for your business, without the complicated bits.</p></div><div class="price-card reveal reveal-delay"><div class="price-top"><span class="price-label">PROTOXTAP / MONTHLY</span><span class="price-dot"></span></div><div class="price-main"><span class="currency">£</span><span class="price">5</span><span class="per">/ month</span></div><div class="price-divider"></div><ul class="included-list"><li><span>✓</span> NFC review tag</li><li><span>✓</span> Custom business review destination</li><li><span>✓</span> Easy setup</li><li><span>✓</span> Ongoing support</li></ul><a class="button button-accent button-wide" href="mailto:hello@protoxtap.co.uk?subject=Get%20my%20ProtoxTap">Get your ProtoxTap <span aria-hidden="true">↗</span></a><p class="price-footnote">Simple pricing. No nonsense.</p></div></section>
+
+        <section class="steps section" id="steps"><div class="shell"><div class="steps-heading reveal"><p class="eyebrow">09 / Set up once</p><h2>Three steps to<br><em>better timing.</em></h2></div><div class="steps-list"><article class="step reveal"><span class="step-number">01</span><div class="step-marker"><span></span></div><div><h3>We configure it</h3><p>Your ProtoxTap is configured for your business and your review destination.</p></div></article><article class="step reveal reveal-delay"><span class="step-number">02</span><div class="step-marker"><span></span></div><div><h3>Put it where customers see it</h3><p>Counter, till, table, reception or anywhere convenient.</p></div></article><article class="step reveal reveal-delay-2"><span class="step-number">03</span><div class="step-marker"><span></span></div><div><h3>Customers tap</h3><p>Their phone opens your review page. The rest is up to them.</p></div></article></div></div></section>
+
+        <section class="faq section shell" id="faq"><div class="faq-heading reveal"><p class="eyebrow">10 / Questions, answered</p><h2>The little<br><em>details.</em></h2></div><div class="faq-list reveal reveal-delay"><details open><summary>What phones work with ProtoxTap?<span>+</span></summary><p>Most modern smartphones support NFC. On supported phones, the review page opens as soon as the tag is tapped.</p></details><details><summary>Where can I put the tag?<span>+</span></summary><p>Anywhere customers naturally pause: a counter, till, table, reception desk or near the exit.</p></details><details><summary>Can I change the review destination?<span>+</span></summary><p>Yes. Get in touch and we can update the destination for your business.</p></details></div></section>
+
+        <section class="final-cta"><div class="cta-grid"><div class="cta-copy reveal"><p class="eyebrow">Ready when you are</p><h2>Your next review<br>could be <em>one tap away.</em></h2><p>Give happy customers an easier way to tell the world about your business.</p><a class="button button-light" href="mailto:hello@protoxtap.co.uk?subject=Get%20my%20ProtoxTap">Get your ProtoxTap <span aria-hidden="true">↗</span></a></div><div class="cta-orbit" aria-hidden="true"><div class="cta-ring"></div><div class="cta-tag product-card"><div class="product-top"><span class="product-logo">P<span>t</span></span><span class="product-type">NFC / 01</span></div><div class="product-center"><div class="nfc-symbol"><i></i><i></i><i></i></div></div><div class="product-bottom"><span>ProtoxTap</span><span class="product-signal">)))</span></div></div></div></div></section>
+    </main>
+
+    <footer class="footer shell"><a class="brand" href="#top"><span class="brand-mark">P</span><span>Protox<span class="brand-tap">Tap</span></span></a><span class="footer-copy">Part of the Protox family · <a href="https://protox-webpages.com" target="_blank" rel="noopener">Protox Webpages ↗</a></span><span class="footer-meta">© 2026 ProtoxTap · UK</span></footer>
+    <script src="script.js"></script>
 </body>
 </html>
