@@ -1,4 +1,0 @@
-[build]
-  base = "Production V1"
-  publish = "../Website"
-  functions = "netlify/functions"

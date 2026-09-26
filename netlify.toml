@@ -1,0 +1,3 @@
+[build]
+  publish = "Website"
+  functions = "Production V1/netlify/functions"
