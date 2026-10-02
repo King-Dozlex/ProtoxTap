@@ -1,0 +1,24 @@
+# Netlify local state
+.netlify/
+
+# Python
+__pycache__/
+*.pyc
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment/secrets
+.env
+.env.*
+!.env.example
+
+# Customer/private data
+Customers/
+
+# Local development/tracking
+V1 Tracking/
+# Node
+node_modules/

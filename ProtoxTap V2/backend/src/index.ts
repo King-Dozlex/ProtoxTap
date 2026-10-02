@@ -1,0 +1,2125 @@
+function escapeHtml(value: unknown): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+import http from "node:http";
+import {
+  createHash,
+  randomBytes,
+} from "node:crypto";
+
+import { eq } from "drizzle-orm";
+
+import { db } from "../db";
+import * as schema from "../db/schema";
+import { verifyPassword } from "./auth/password";
+
+const PORT = 3000;
+
+const SESSION_COOKIE = "protoxtap_session";
+
+const SESSION_DURATION =
+  1000 * 60 * 60 * 24 * 7;
+
+// =====================================================
+// RESPONSE HELPERS
+// =====================================================
+
+function sendJson(
+  res: http.ServerResponse,
+  status: number,
+  data: unknown
+) {
+  res.writeHead(status, {
+    "Content-Type": "application/json",
+  });
+
+  res.end(JSON.stringify(data));
+}
+
+function sendText(
+  res: http.ServerResponse,
+  status: number,
+  text: string
+) {
+  res.writeHead(status, {
+    "Content-Type": "text/plain; charset=utf-8",
+  });
+
+  res.end(text);
+}
+
+function sendHtml(
+  res: http.ServerResponse,
+  status: number,
+  html: string
+) {
+  res.writeHead(status, {
+    "Content-Type": "text/html; charset=utf-8",
+  });
+
+  res.end(html);
+}
+
+// =====================================================
+// REQUEST BODY
+// =====================================================
+
+async function readBody(
+  req: http.IncomingMessage
+) {
+  let body = "";
+
+  for await (const chunk of req) {
+    body += chunk;
+  }
+
+  if (!body) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(body);
+  } catch {
+    throw new Error("INVALID_JSON");
+  }
+}
+
+// =====================================================
+// SESSION HELPERS
+// =====================================================
+
+function hashSessionToken(token: string) {
+  return createHash("sha256")
+    .update(token)
+    .digest("hex");
+}
+
+function getCookies(
+  req: http.IncomingMessage
+): Record<string, string> {
+  const header = req.headers.cookie;
+
+  if (!header) {
+    return {};
+  }
+
+  const cookies: Record<string, string> = {};
+
+  for (const part of header.split(";")) {
+    const [key, ...value] =
+      part.trim().split("=");
+
+    if (key && value.length > 0) {
+      cookies[key] = decodeURIComponent(
+        value.join("=")
+      );
+    }
+  }
+
+  return cookies;
+}
+
+async function getAuthenticatedUser(
+  req: http.IncomingMessage
+) {
+  const cookies = getCookies(req);
+
+  const token =
+    cookies[SESSION_COOKIE];
+
+  if (!token) {
+    return null;
+  }
+
+  const tokenHash =
+    hashSessionToken(token);
+
+  const result = await db
+    .select({
+      sessionId: schema.sessions.id,
+      adminUserId:
+        schema.adminUsers.id,
+      username:
+        schema.adminUsers.username,
+      expiresAt:
+        schema.sessions.expiresAt,
+    })
+    .from(schema.sessions)
+    .innerJoin(
+      schema.adminUsers,
+      eq(
+        schema.sessions.adminUserId,
+        schema.adminUsers.id
+      )
+    )
+    .where(
+      eq(
+        schema.sessions.tokenHash,
+        tokenHash
+      )
+    )
+    .limit(1);
+
+  if (result.length === 0) {
+    return null;
+  }
+
+  const session = result[0];
+
+  if (
+    session.expiresAt.getTime() <=
+    Date.now()
+  ) {
+    await db
+      .delete(schema.sessions)
+      .where(
+        eq(
+          schema.sessions.id,
+          session.sessionId
+        )
+      );
+
+    return null;
+  }
+
+  return session;
+}
+
+// =====================================================
+// ADMIN API AUTH GUARD
+// =====================================================
+
+async function requireAdmin(
+  req: http.IncomingMessage,
+  res: http.ServerResponse
+) {
+  const user =
+    await getAuthenticatedUser(req);
+
+  if (!user) {
+    sendJson(res, 401, {
+      error: "Authentication required",
+    });
+
+    return null;
+  }
+
+  return user;
+}
+
+// =====================================================
+// ADMIN DASHBOARD HTML
+// =====================================================
+
+function adminLoginHtml() {
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ProtoxTap Admin Login</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, sans-serif;
+      background: #0f1115;
+      color: #f5f5f5;
+      padding: 20px;
+    }
+
+    .login {
+      width: min(420px, 100%);
+      background: #171a20;
+      border: 1px solid #292d35;
+      border-radius: 14px;
+      padding: 28px;
+    }
+
+    h1 {
+      margin-top: 0;
+      margin-bottom: 8px;
+    }
+
+    .muted {
+      color: #9ca3af;
+      margin-bottom: 24px;
+    }
+
+    form {
+      display: grid;
+      gap: 14px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #363b45;
+      background: #0f1115;
+      color: white;
+      font-size: 16px;
+    }
+
+    button {
+      padding: 12px;
+      border: 0;
+      border-radius: 8px;
+      background: white;
+      color: #111;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 15px;
+    }
+
+    .error {
+      display: none;
+      background: #7f1d1d;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 14px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="login">
+    <h1>ProtoxTap Admin</h1>
+    <div class="muted">Sign in to manage businesses and cards.</div>
+
+    <div id="error" class="error"></div>
+
+    <form id="loginForm">
+      <input
+        id="username"
+        placeholder="Username"
+        autocomplete="username"
+        required
+      >
+
+      <input
+        id="password"
+        type="password"
+        placeholder="Password"
+        autocomplete="current-password"
+        required
+      >
+
+      <button type="submit">Sign in</button>
+    </form>
+  </div>
+
+  <script>
+    document
+      .getElementById("loginForm")
+      .addEventListener("submit", async function (event) {
+        event.preventDefault();
+
+        var errorElement = document.getElementById("error");
+
+        errorElement.style.display = "none";
+
+        try {
+          var response = await fetch("/api/auth/login", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              username:
+                document.getElementById("username").value,
+
+              password:
+                document.getElementById("password").value
+            })
+          });
+
+          var data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(
+              data.error || "Login failed"
+            );
+          }
+
+          window.location.href = "/admin";
+        } catch (error) {
+          errorElement.textContent = error.message;
+          errorElement.style.display = "block";
+        }
+      });
+  </script>
+</body>
+</html>
+`;
+}
+
+function adminDashboardHtml(username: string) {
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ProtoxTap Admin</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0f1115;
+      color: #f5f5f5;
+    }
+
+    .container {
+      width: min(1100px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    header {
+      border-bottom: 1px solid #292d35;
+      padding: 20px 0;
+      margin-bottom: 24px;
+    }
+
+    header .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 26px;
+    }
+
+    h2 {
+      margin-top: 0;
+      font-size: 20px;
+    }
+
+    .muted {
+      color: #9ca3af;
+    }
+
+    button {
+      border: 0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .button {
+      background: #ffffff;
+      color: #111111;
+    }
+
+    .danger {
+      background: #dc2626;
+      color: white;
+    }
+
+    .success {
+      background: #16a34a;
+      color: white;
+    }
+
+    .secondary {
+      background: #292d35;
+      color: white;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background: #171a20;
+      border: 1px solid #292d35;
+      border-radius: 12px;
+      padding: 18px;
+      margin-bottom: 24px;
+    }
+
+    .stat-number {
+      font-size: 30px;
+      font-weight: 700;
+      margin-top: 6px;
+    }
+
+    form {
+      display: grid;
+      gap: 12px;
+    }
+
+    input,
+    select {
+      width: 100%;
+      padding: 11px 12px;
+      border-radius: 8px;
+      border: 1px solid #363b45;
+      background: #0f1115;
+      color: white;
+      font-size: 15px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .item {
+      border-top: 1px solid #292d35;
+      padding: 15px 0;
+    }
+
+    .item:first-child {
+      border-top: 0;
+    }
+
+    .item-title {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+
+    .item-meta {
+      color: #9ca3af;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .status {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .status-active {
+      background: #14532d;
+      color: #bbf7d0;
+    }
+
+    .status-inactive {
+      background: #713f12;
+      color: #fef3c7;
+    }
+
+    .status-unassigned {
+      background: #374151;
+      color: #e5e7eb;
+    }
+
+    .message {
+      display: none;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      background: #292d35;
+    }
+
+    .message.error {
+      background: #7f1d1d;
+    }
+
+    .message.success {
+      background: #14532d;
+    }
+
+    @media (max-width: 700px) {
+      .grid,
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      header .row {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .container {
+        width: min(100% - 20px, 1100px);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="container">
+      <div class="row">
+        <div>
+          <h1>ProtoxTap Admin</h1>
+          <div class="muted">Logged in as <strong>${escapeHtml(username)}</strong></div>
+        </div>
+
+        <button class="secondary" onclick="logout()">Log out</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <div id="message" class="message"></div>
+
+    <section class="grid">
+      <div class="card">
+        <div class="muted">Businesses</div>
+        <div id="businessCount" class="stat-number">0</div>
+      </div>
+
+      <div class="card">
+        <div class="muted">Cards</div>
+        <div id="cardCount" class="stat-number">0</div>
+      </div>
+
+      <div class="card">
+        <div class="muted">Active Cards</div>
+        <div id="activeCardCount" class="stat-number">0</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Add Business</h2>
+
+      <form id="businessForm">
+        <div class="form-grid">
+          <input id="businessName" placeholder="Business name" required>
+          <input id="contactName" placeholder="Contact name">
+          <input id="email" type="email" placeholder="Email">
+          <input id="phone" placeholder="Phone">
+        </div>
+
+        <button class="button" type="submit">Add Business</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Add Physical Card</h2>
+
+      <form id="cardForm">
+        <input id="cardCode" placeholder="Card code e.g. PT-0004" required>
+        <button class="button" type="submit">Add Card</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Assign Card</h2>
+
+      <form id="assignForm">
+        <select id="assignCard" required>
+          <option value="">Select unassigned card</option>
+        </select>
+
+        <select id="assignBusiness" required>
+          <option value="">Select business</option>
+        </select>
+
+        <input
+          id="reviewUrl"
+          type="url"
+          placeholder="Google review URL"
+          required
+        >
+
+        <button class="button" type="submit">Assign Card</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Businesses</h2>
+      <div id="businessList">Loading...</div>
+    </section>
+
+    <section class="card">
+      <h2>Cards</h2>
+      <div id="cardList">Loading...</div>
+    </section>
+
+  </main>
+
+<script>
+  var businesses = [];
+  var cards = [];
+
+  function showMessage(message, type) {
+    var element = document.getElementById("message");
+
+    element.textContent = message;
+    element.className = "message " + (type || "");
+    element.style.display = "block";
+
+    setTimeout(function () {
+      element.style.display = "none";
+    }, 4000);
+  }
+
+  async function api(url, options) {
+    var response = await fetch(url, options || {});
+    var data = {};
+
+    try {
+      data = await response.json();
+    } catch (_) {
+      data = {};
+    }
+
+    if (!response.ok) {
+      throw new Error(data.error || "Request failed");
+    }
+
+    return data;
+  }
+
+  async function loadBusinesses() {
+    businesses = await api("/api/businesses");
+
+    document.getElementById("businessCount").textContent =
+      businesses.length;
+
+    var select = document.getElementById("assignBusiness");
+
+    select.innerHTML =
+      '<option value="">Select business</option>';
+
+    businesses.forEach(function (business) {
+      var option = document.createElement("option");
+
+      option.value = business.id;
+      option.textContent = business.businessName;
+
+      select.appendChild(option);
+    });
+
+    var container = document.getElementById("businessList");
+
+    if (!businesses.length) {
+      container.innerHTML =
+        '<div class="muted">No businesses yet.</div>';
+      return;
+    }
+
+    container.innerHTML = businesses.map(function (business) {
+      var contact = business.contactName || "No contact";
+      var email = business.email || "No email";
+      var phone = business.phone || "No phone";
+
+      return (
+        '<div class="item">' +
+          '<div class="item-title">' +
+            escapeHtml(business.businessName) +
+          '</div>' +
+          '<div class="item-meta">' +
+            escapeHtml(contact) +
+            " · " +
+            escapeHtml(email) +
+            " · " +
+            escapeHtml(phone) +
+          '</div>' +
+        '</div>'
+      );
+    }).join("");
+  }
+
+  async function loadCards() {
+    cards = await api("/api/cards");
+
+    document.getElementById("cardCount").textContent =
+      cards.length;
+
+    document.getElementById("activeCardCount").textContent =
+      cards.filter(function (card) {
+        return card.status === "active";
+      }).length;
+
+    var select = document.getElementById("assignCard");
+
+    select.innerHTML =
+      '<option value="">Select unassigned card</option>';
+
+    cards
+      .filter(function (card) {
+        return card.status === "unassigned";
+      })
+      .forEach(function (card) {
+        var option = document.createElement("option");
+
+        option.value = card.id;
+        option.textContent = card.cardCode;
+
+        select.appendChild(option);
+      });
+
+    var container = document.getElementById("cardList");
+
+    if (!cards.length) {
+      container.innerHTML =
+        '<div class="muted">No cards yet.</div>';
+      return;
+    }
+
+    container.innerHTML = cards.map(function (card) {
+      var statusClass =
+        card.status === "active"
+          ? "status-active"
+          : card.status === "inactive"
+            ? "status-inactive"
+            : "status-unassigned";
+
+      var businessName =
+        card.businessName || "Unassigned";
+
+      var action = "";
+
+      if (card.status === "active") {
+        action =
+          '<button class="danger" onclick="changeCardStatus(' +
+          card.id +
+          ', \\'deactivate\\')">Deactivate</button>';
+      } else if (card.status === "inactive") {
+        action =
+          '<button class="success" onclick="changeCardStatus(' +
+          card.id +
+          ', \\'activate\\')">Activate</button>';
+      }
+
+      return (
+        '<div class="item">' +
+          '<div class="item-title">' +
+            escapeHtml(card.cardCode) +
+          '</div>' +
+
+          '<div class="item-meta">' +
+            "Business: " +
+            escapeHtml(businessName) +
+            '<br>' +
+            "Status: " +
+            '<span class="status ' +
+            statusClass +
+            '">' +
+            escapeHtml(card.status) +
+            '</span>' +
+          '</div>' +
+
+          '<div class="actions">' +
+            action +
+          '</div>' +
+        '</div>'
+      );
+    }).join("");
+  }
+
+  async function changeCardStatus(id, action) {
+    try {
+      await api("/api/cards/" + id + "/" + action, {
+        method: "POST"
+      });
+
+      showMessage(
+        action === "activate"
+          ? "Card activated."
+          : "Card deactivated.",
+        "success"
+      );
+
+      await loadCards();
+    } catch (error) {
+      showMessage(error.message, "error");
+    }
+  }
+
+  document
+    .getElementById("businessForm")
+    .addEventListener("submit", async function (event) {
+      event.preventDefault();
+
+      try {
+        await api("/api/businesses", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            businessName:
+              document.getElementById("businessName").value,
+
+            contactName:
+              document.getElementById("contactName").value,
+
+            email:
+              document.getElementById("email").value,
+
+            phone:
+              document.getElementById("phone").value
+          })
+        });
+
+        event.target.reset();
+
+        showMessage(
+          "Business added successfully.",
+          "success"
+        );
+
+        await loadBusinesses();
+      } catch (error) {
+        showMessage(error.message, "error");
+      }
+    });
+
+  document
+    .getElementById("cardForm")
+    .addEventListener("submit", async function (event) {
+      event.preventDefault();
+
+      try {
+        await api("/api/cards", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            cardCode:
+              document.getElementById("cardCode").value
+          })
+        });
+
+        event.target.reset();
+
+        showMessage(
+          "Card added successfully.",
+          "success"
+        );
+
+        await loadCards();
+      } catch (error) {
+        showMessage(error.message, "error");
+      }
+    });
+
+  document
+    .getElementById("assignForm")
+    .addEventListener("submit", async function (event) {
+      event.preventDefault();
+
+      var cardId =
+        document.getElementById("assignCard").value;
+
+      var businessId =
+        document.getElementById("assignBusiness").value;
+
+      var googleReviewUrl =
+        document.getElementById("reviewUrl").value;
+
+      try {
+        await api("/api/cards/" + cardId + "/assign", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            businessId: Number(businessId),
+            googleReviewUrl: googleReviewUrl
+          })
+        });
+
+        event.target.reset();
+
+        showMessage(
+          "Card assigned successfully.",
+          "success"
+        );
+
+        await loadCards();
+      } catch (error) {
+        showMessage(error.message, "error");
+      }
+    });
+
+  async function logout() {
+    try {
+      await api("/api/auth/logout", {
+        method: "POST"
+      });
+    } finally {
+      window.location.href = "/admin/login";
+    }
+  }
+
+  function escapeHtml(value) {
+    var div = document.createElement("div");
+    div.textContent = value == null ? "" : String(value);
+    return div.innerHTML;
+  }
+
+  async function loadDashboard() {
+    try {
+      await Promise.all([
+        loadBusinesses(),
+        loadCards()
+      ]);
+    } catch (error) {
+      if (
+        error.message === "Authentication required"
+      ) {
+        window.location.href = "/admin/login";
+        return;
+      }
+
+      showMessage(error.message, "error");
+    }
+  }
+
+  loadDashboard();
+</script>
+
+</body>
+</html>
+`;
+}
+
+const server =
+  http.createServer(
+    async (req, res) => {
+
+      console.log(
+        `${req.method} ${req.url}`
+      );
+
+      const url =
+        new URL(
+          req.url ?? "/",
+          "http://localhost"
+        );
+
+      try {
+
+        // =================================================
+        // HEALTH CHECK
+        // =================================================
+
+        if (
+          url.pathname === "/" &&
+          req.method === "GET"
+        ) {
+
+          sendText(
+            res,
+            200,
+            "ProtoxTap server is running."
+          );
+
+          return;
+        }
+
+        // =================================================
+        // LOGIN
+        // =================================================
+
+        if (
+          url.pathname ===
+            "/api/auth/login" &&
+          req.method === "POST"
+        ) {
+
+          const data =
+            await readBody(req);
+
+          if (
+            !data.username ||
+            !data.password
+          ) {
+
+            sendJson(res, 400, {
+              error:
+                "Username and password are required",
+            });
+
+            return;
+          }
+
+          const users =
+            await db
+              .select()
+              .from(
+                schema.adminUsers
+              )
+              .where(
+                eq(
+                  schema.adminUsers.username,
+                  data.username
+                )
+              )
+              .limit(1);
+
+          if (
+            users.length === 0
+          ) {
+
+            sendJson(res, 401, {
+              error:
+                "Invalid username or password",
+            });
+
+            return;
+          }
+
+          const user =
+            users[0];
+
+          const validPassword =
+            verifyPassword(
+              data.password,
+              user.passwordHash
+            );
+
+          if (!validPassword) {
+
+            sendJson(res, 401, {
+              error:
+                "Invalid username or password",
+            });
+
+            return;
+          }
+
+          const token =
+            randomBytes(32)
+              .toString("hex");
+
+          const tokenHash =
+            hashSessionToken(token);
+
+          const expiresAt =
+            new Date(
+              Date.now() +
+              SESSION_DURATION
+            );
+
+          await db
+            .insert(schema.sessions)
+            .values({
+              tokenHash,
+              adminUserId:
+                user.id,
+              expiresAt,
+            });
+
+          res.writeHead(200, {
+            "Content-Type":
+              "application/json",
+
+            "Set-Cookie":
+              `${SESSION_COOKIE}=${encodeURIComponent(token)}; HttpOnly; Path=/; SameSite=Lax; Max-Age=604800`,
+          });
+
+          res.end(
+            JSON.stringify({
+              message:
+                "Login successful",
+
+              username:
+                user.username,
+            })
+          );
+
+          return;
+        }
+
+        // =================================================
+        // LOGOUT
+        // =================================================
+
+        if (
+          url.pathname ===
+            "/api/auth/logout" &&
+          req.method === "POST"
+        ) {
+
+          const cookies =
+            getCookies(req);
+
+          const token =
+            cookies[
+              SESSION_COOKIE
+            ];
+
+          if (token) {
+
+            const tokenHash =
+              hashSessionToken(
+                token
+              );
+
+            await db
+              .delete(
+                schema.sessions
+              )
+              .where(
+                eq(
+                  schema.sessions
+                    .tokenHash,
+                  tokenHash
+                )
+              );
+          }
+
+          res.writeHead(200, {
+            "Content-Type":
+              "application/json",
+
+            "Set-Cookie":
+              `${SESSION_COOKIE}=; HttpOnly; Path=/; SameSite=Lax; Max-Age=0`,
+          });
+
+          res.end(
+            JSON.stringify({
+              message:
+                "Logged out",
+            })
+          );
+
+          return;
+        }
+
+        // =================================================
+        // CURRENT USER
+        // =================================================
+
+        if (
+          url.pathname ===
+            "/api/auth/me" &&
+          req.method === "GET"
+        ) {
+
+          const user =
+            await getAuthenticatedUser(
+              req
+            );
+
+          if (!user) {
+
+            sendJson(res, 401, {
+              authenticated:
+                false,
+            });
+
+            return;
+          }
+
+          sendJson(res, 200, {
+            authenticated:
+              true,
+
+            username:
+              user.username,
+          });
+
+          return;
+        }
+
+        // =================================================
+        // ADMIN PAGE
+        // =================================================
+
+        if (
+          (
+            url.pathname ===
+              "/admin" ||
+            url.pathname ===
+              "/admin/"
+          ) &&
+          req.method === "GET"
+        ) {
+
+          const user =
+            await getAuthenticatedUser(
+              req
+            );
+
+          if (!user) {
+
+            res.writeHead(
+              302,
+              {
+                Location:
+                  "/admin/login",
+              }
+            );
+
+            res.end();
+
+            return;
+          }
+
+          sendHtml(
+            res,
+            200,
+            adminDashboardHtml(
+              user.username
+            )
+          );
+
+          return;
+        }
+
+        // =================================================
+        // LOGIN PAGE
+        // =================================================
+
+        if (
+          url.pathname ===
+            "/admin/login" &&
+          req.method === "GET"
+        ) {
+
+          const user =
+            await getAuthenticatedUser(
+              req
+            );
+
+          if (user) {
+
+            res.writeHead(
+              302,
+              {
+                Location:
+                  "/admin",
+              }
+            );
+
+            res.end();
+
+            return;
+          }
+
+          sendHtml(
+            res,
+            200,
+            adminLoginHtml()
+          );
+
+          return;
+        }
+
+        // =================================================
+        // PUBLIC CARD REDIRECT
+        // =================================================
+
+        if (
+          url.pathname.startsWith(
+            "/r/"
+          ) &&
+          req.method === "GET"
+        ) {
+
+          const cardCode =
+            url.pathname
+              .split("/")[2];
+
+          if (!cardCode) {
+
+            sendText(
+              res,
+              400,
+              "Invalid ProtoxTap card."
+            );
+
+            return;
+          }
+
+          const result =
+            await db
+              .select()
+              .from(
+                schema.cards
+              )
+              .where(
+                eq(
+                  schema.cards
+                    .cardCode,
+                  cardCode
+                )
+              )
+              .limit(1);
+
+          if (
+            result.length === 0
+          ) {
+
+            sendText(
+              res,
+              404,
+              `Invalid ProtoxTap card: ${cardCode}`
+            );
+
+            return;
+          }
+
+          const card =
+            result[0];
+
+          if (
+            card.status !==
+            "active"
+          ) {
+
+            sendText(
+              res,
+              200,
+              `ProtoxTap card is inactive: ${cardCode}`
+            );
+
+            return;
+          }
+
+          await db
+            .insert(
+              schema.cardEvents
+            )
+            .values({
+              cardId:
+                card.id,
+          
+              eventType:
+                "tap",
+            });
+
+          res.writeHead(
+            302,
+            {
+              Location:
+                card.googleReviewUrl ??
+                "/",
+            }
+          );
+
+          res.end();
+
+          return;
+        }
+
+        // =================================================
+        // PROTECTED ADMIN API
+        // =================================================
+
+        const isProtectedApi =
+          url.pathname ===
+            "/api/businesses" ||
+          url.pathname ===
+            "/api/cards" ||
+          /^\/api\/cards\/\d+\/assign$/
+            .test(
+              url.pathname
+            ) ||
+          /^\/api\/cards\/\d+\/activate$/
+            .test(
+              url.pathname
+            ) ||
+          /^\/api\/cards\/\d+\/deactivate$/
+            .test(
+              url.pathname
+            );
+
+        if (isProtectedApi) {
+
+          const user =
+            await requireAdmin(
+              req,
+              res
+            );
+
+          if (!user) {
+            return;
+          }
+
+        }
+
+        // =================================================
+        // GET BUSINESSES
+        // =================================================
+
+        if (
+          url.pathname ===
+            "/api/businesses" &&
+          req.method === "GET"
+        ) {
+
+          const result =
+            await db
+              .select()
+              .from(
+                schema.businesses
+              );
+
+          sendJson(
+            res,
+            200,
+            result
+          );
+
+          return;
+        }
+
+        // =================================================
+        // CREATE BUSINESS
+        // =================================================
+
+        if (
+          url.pathname ===
+            "/api/businesses" &&
+          req.method === "POST"
+        ) {
+
+          const data =
+            await readBody(req);
+
+          if (
+            !data.businessName ||
+            typeof data.businessName !==
+              "string"
+          ) {
+
+            sendJson(res, 400, {
+              error:
+                "businessName is required",
+            });
+
+            return;
+          }
+
+          const result =
+            await db
+              .insert(
+                schema.businesses
+              )
+              .values({
+                businessName:
+                  data.businessName
+                    .trim(),
+
+                contactName:
+                  data.contactName
+                    ?.trim() ??
+                  null,
+
+                email:
+                  data.email
+                    ?.trim() ??
+                  null,
+
+                phone:
+                  data.phone
+                    ?.trim() ??
+                  null,
+
+                notes:
+                  data.notes
+                    ?.trim() ??
+                  null,
+              })
+              .returning();
+
+          sendJson(
+            res,
+            201,
+            result[0]
+          );
+
+          return;
+        }
+
+        // =================================================
+        // GET CARDS
+        // =================================================
+
+        if (
+          url.pathname ===
+            "/api/cards" &&
+          req.method === "GET"
+        ) {
+
+          const result =
+            await db
+              .select({
+                id:
+                  schema.cards.id,
+
+                cardCode:
+                  schema.cards.cardCode,
+
+                businessId:
+                  schema.cards
+                    .businessId,
+
+                businessName:
+                  schema.businesses
+                    .businessName,
+
+                googleReviewUrl:
+                  schema.cards
+                    .googleReviewUrl,
+
+                status:
+                  schema.cards.status,
+
+                createdAt:
+                  schema.cards
+                    .createdAt,
+
+                activatedAt:
+                  schema.cards
+                    .activatedAt,
+
+                deactivatedAt:
+                  schema.cards
+                    .deactivatedAt,
+              })
+              .from(
+                schema.cards
+              )
+              .leftJoin(
+                schema.businesses,
+                eq(
+                  schema.cards
+                    .businessId,
+                  schema.businesses
+                    .id
+                )
+              );
+
+          sendJson(
+            res,
+            200,
+            result
+          );
+
+          return;
+        }
+
+        // =================================================
+        // CREATE CARD
+        // =================================================
+
+        if (
+          url.pathname ===
+            "/api/cards" &&
+          req.method === "POST"
+        ) {
+
+          const data =
+            await readBody(req);
+
+          if (
+            !data.cardCode ||
+            typeof data.cardCode !==
+              "string"
+          ) {
+
+            sendJson(res, 400, {
+              error:
+                "cardCode is required",
+            });
+
+            return;
+          }
+
+          const cardCode =
+            data.cardCode
+              .trim()
+              .toUpperCase();
+
+          const existing =
+            await db
+              .select()
+              .from(
+                schema.cards
+              )
+              .where(
+                eq(
+                  schema.cards
+                    .cardCode,
+                  cardCode
+                )
+              )
+              .limit(1);
+
+          if (
+            existing.length > 0
+          ) {
+
+            sendJson(res, 409, {
+              error:
+                "Card code already exists",
+            });
+
+            return;
+          }
+
+          const result =
+            await db
+              .insert(
+                schema.cards
+              )
+              .values({
+                cardCode,
+                status:
+                  "unassigned",
+              })
+              .returning();
+
+          sendJson(
+            res,
+            201,
+            result[0]
+          );
+
+          return;
+        }
+
+        // =================================================
+        // ASSIGN CARD
+        // =================================================
+
+        const assignMatch =
+          url.pathname.match(
+            /^\/api\/cards\/(\d+)\/assign$/
+          );
+
+        if (
+          assignMatch &&
+          req.method === "POST"
+        ) {
+
+          const cardId =
+            Number(
+              assignMatch[1]
+            );
+
+          const data =
+            await readBody(req);
+
+          if (
+            !data.businessId ||
+            !data.googleReviewUrl
+          ) {
+
+            sendJson(res, 400, {
+              error:
+                "businessId and googleReviewUrl are required",
+            });
+
+            return;
+          }
+
+          const business =
+            await db
+              .select()
+              .from(
+                schema.businesses
+              )
+              .where(
+                eq(
+                  schema.businesses
+                    .id,
+                  Number(
+                    data.businessId
+                  )
+                )
+              )
+              .limit(1);
+
+          if (
+            business.length === 0
+          ) {
+
+            sendJson(res, 404, {
+              error:
+                "Business not found",
+            });
+
+            return;
+          }
+
+          const card =
+            await db
+              .select()
+              .from(
+                schema.cards
+              )
+              .where(
+                eq(
+                  schema.cards.id,
+                  cardId
+                )
+              )
+              .limit(1);
+
+          if (
+            card.length === 0
+          ) {
+
+            sendJson(res, 404, {
+              error:
+                "Card not found",
+            });
+
+            return;
+          }
+
+          if (
+            card[0].status ===
+              "active"
+          ) {
+
+            sendJson(res, 400, {
+              error:
+                "Deactivate the card before reassigning it",
+            });
+
+            return;
+          }
+
+          const result =
+            await db
+              .update(
+                schema.cards
+              )
+              .set({
+                businessId:
+                  Number(
+                    data.businessId
+                  ),
+
+                googleReviewUrl:
+                  data.googleReviewUrl
+                    .trim(),
+
+                status:
+                  "inactive",
+
+                activatedAt:
+                  null,
+
+                deactivatedAt:
+                  null,
+              })
+              .where(
+                eq(
+                  schema.cards.id,
+                  cardId
+                )
+              )
+              .returning();
+
+          await db
+            .insert(
+              schema.cardEvents
+            )
+            .values({
+              cardId,
+
+              eventType:
+                "assigned",
+            });
+
+          sendJson(
+            res,
+            200,
+            result[0]
+          );
+
+          return;
+        }
+
+        // =================================================
+        // ACTIVATE CARD
+        // =================================================
+
+        const activateMatch =
+          url.pathname.match(
+            /^\/api\/cards\/(\d+)\/activate$/
+          );
+
+        if (
+          activateMatch &&
+          req.method === "POST"
+        ) {
+
+          const cardId =
+            Number(
+              activateMatch[1]
+            );
+
+          const card =
+            await db
+              .select()
+              .from(
+                schema.cards
+              )
+              .where(
+                eq(
+                  schema.cards.id,
+                  cardId
+                )
+              )
+              .limit(1);
+
+          if (
+            card.length === 0
+          ) {
+
+            sendJson(res, 404, {
+              error:
+                "Card not found",
+            });
+
+            return;
+          }
+
+          const existingCard =
+            card[0];
+
+          if (
+            !existingCard.businessId ||
+            !existingCard.googleReviewUrl
+          ) {
+
+            sendJson(res, 400, {
+              error:
+                "Card must be assigned to a business before activation",
+            });
+
+            return;
+          }
+
+          if (
+            existingCard.status ===
+              "active"
+          ) {
+
+            sendJson(res, 400, {
+              error:
+                "Card is already active",
+            });
+
+            return;
+          }
+
+          const result =
+            await db
+              .update(
+                schema.cards
+              )
+              .set({
+                status:
+                  "active",
+
+                activatedAt:
+                  new Date(),
+
+                deactivatedAt:
+                  null,
+              })
+              .where(
+                eq(
+                  schema.cards.id,
+                  cardId
+                )
+              )
+              .returning();
+
+          await db
+            .insert(
+              schema.cardEvents
+            )
+            .values({
+              cardId,
+
+              eventType:
+                "activated",
+            });
+
+          sendJson(
+            res,
+            200,
+            result[0]
+          );
+
+          return;
+        }
+
+        // =================================================
+        // DEACTIVATE CARD
+        // =================================================
+
+        const deactivateMatch =
+          url.pathname.match(
+            /^\/api\/cards\/(\d+)\/deactivate$/
+          );
+
+        if (
+          deactivateMatch &&
+          req.method === "POST"
+        ) {
+
+          const cardId =
+            Number(
+              deactivateMatch[1]
+            );
+
+          const card =
+            await db
+              .select()
+              .from(
+                schema.cards
+              )
+              .where(
+                eq(
+                  schema.cards.id,
+                  cardId
+                )
+              )
+              .limit(1);
+
+          if (
+            card.length === 0
+          ) {
+
+            sendJson(res, 404, {
+              error:
+                "Card not found",
+            });
+
+            return;
+          }
+
+          const result =
+            await db
+              .update(
+                schema.cards
+              )
+              .set({
+                status:
+                  "inactive",
+
+                deactivatedAt:
+                  new Date(),
+              })
+              .where(
+                eq(
+                  schema.cards.id,
+                  cardId
+                )
+              )
+              .returning();
+
+          await db
+            .insert(
+              schema.cardEvents
+            )
+            .values({
+              cardId,
+
+              eventType:
+                "deactivated",
+            });
+
+          sendJson(
+            res,
+            200,
+            result[0]
+          );
+
+          return;
+        }
+
+        // =================================================
+        // 404
+        // =================================================
+
+        sendJson(res, 404, {
+          error:
+            "Not found",
+        });
+
+      } catch (error) {
+
+        if (
+          error instanceof Error &&
+          error.message ===
+            "INVALID_JSON"
+        ) {
+
+          sendJson(res, 400, {
+            error:
+              "Invalid JSON request body",
+          });
+
+          return;
+        }
+
+        console.error(
+          "Server error:",
+          error
+        );
+
+        sendJson(res, 500, {
+          error:
+            "Internal server error",
+        });
+      }
+
+    }
+  );
+
+// =====================================================
+// START SERVER
+// =====================================================
+
+server.listen(
+  PORT,
+  "127.0.0.1",
+  () => {
+
+    console.log(
+      `ProtoxTap server listening on http://127.0.0.1:${PORT}`
+    );
+
+  }
+);
