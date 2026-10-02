@@ -27,3 +27,6 @@ node_modules/
 key_for_vm.txt
 **/key_for_vm.txt
 *.pem
+# SSH public keys
+key_for_vm.txt.pub
+**/key_for_vm.txt.pub
