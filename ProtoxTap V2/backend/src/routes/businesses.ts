@@ -5,6 +5,8 @@ import { db } from "../../db/index";
 import { businesses, cards } from "../../db/schema";
 import { requireAuth } from "../utils/require-auth";
 
+import { findGooglePlaceId } from "../services/google-places";
+
 const router = Router();
 
 router.use(requireAuth);
@@ -74,6 +76,14 @@ router.post("/", async (req, res) => {
       });
     }
 
+    console.log("Looking up Google Place:", businessName);
+
+    const googlePlaceId = await findGooglePlaceId(
+      businessName
+    );
+
+    console.log("Google Place ID result:", googlePlaceId);
+
     const result = await db
       .insert(businesses)
       .values({
@@ -82,6 +92,7 @@ router.post("/", async (req, res) => {
         email: email || null,
         phone: phone || null,
         notes: notes || null,
+        googlePlaceId,
       })
       .returning();
 
@@ -119,6 +130,10 @@ router.put("/:id", async (req, res) => {
       });
     }
 
+    const googlePlaceId = await findGooglePlaceId(
+      businessName
+    );
+
     const result = await db
       .update(businesses)
       .set({
@@ -127,6 +142,7 @@ router.put("/:id", async (req, res) => {
         email: email || null,
         phone: phone || null,
         notes: notes || null,
+        googlePlaceId,
       })
       .where(eq(businesses.id, id))
       .returning();
@@ -146,6 +162,7 @@ router.put("/:id", async (req, res) => {
     });
   }
 });
+
 router.delete("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -172,7 +189,7 @@ router.delete("/:id", async (req, res) => {
       .update(cards)
       .set({
         businessId: null,
-        googleReviewUrl: "https://www.protoxtap.com/inactive",
+        redirectUrl: "https://www.protoxtap.com/inactive",
         status: "inactive",
         activatedAt: null,
         deactivatedAt: new Date(),
@@ -196,6 +213,5 @@ router.delete("/:id", async (req, res) => {
     });
   }
 });
-
 
 export default router;

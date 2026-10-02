@@ -27,7 +27,7 @@ export const cards = pgTable("cards", {
   businessId: integer("business_id")
     .references(() => businesses.id),
 
-  googleReviewUrl: text("google_review_url"),
+  redirectUrl: text("redirect_url"),
 
   status: text("status").notNull().default("unassigned"),
 

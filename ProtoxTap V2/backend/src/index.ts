@@ -943,7 +943,7 @@ function adminDashboardHtml(username: string) {
       var businessId =
         document.getElementById("assignBusiness").value;
 
-      var googleReviewUrl =
+      var redirectUrl =
         document.getElementById("reviewUrl").value;
 
       try {
@@ -954,7 +954,7 @@ function adminDashboardHtml(username: string) {
           },
           body: JSON.stringify({
             businessId: Number(businessId),
-            googleReviewUrl: googleReviewUrl
+            redirectUrl: redirectUrl
           })
         });
 
@@ -1424,7 +1424,7 @@ const server =
             302,
             {
               Location:
-                card.googleReviewUrl ??
+                card.redirectUrl ??
                 "/",
             }
           );
@@ -1591,9 +1591,9 @@ const server =
                   schema.businesses
                     .businessName,
 
-                googleReviewUrl:
+                redirectUrl:
                   schema.cards
-                    .googleReviewUrl,
+                    .redirectUrl,
 
                 status:
                   schema.cards.status,
@@ -1736,12 +1736,12 @@ const server =
 
           if (
             !data.businessId ||
-            !data.googleReviewUrl
+            !data.redirectUrl
           ) {
 
             sendJson(res, 400, {
               error:
-                "businessId and googleReviewUrl are required",
+                "businessId and redirectUrl are required",
             });
 
             return;
@@ -1826,8 +1826,8 @@ const server =
                     data.businessId
                   ),
 
-                googleReviewUrl:
-                  data.googleReviewUrl
+                redirectUrl:
+                  data.redirectUrl
                     .trim(),
 
                 status:
@@ -1917,7 +1917,7 @@ const server =
 
           if (
             !existingCard.businessId ||
-            !existingCard.googleReviewUrl
+            !existingCard.redirectUrl
           ) {
 
             sendJson(res, 400, {

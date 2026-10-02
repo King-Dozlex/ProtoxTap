@@ -35,7 +35,7 @@ router.get("/r/:cardCode", async (req, res) => {
     const card = result[0];
 
     // Card exists but is inactive or has no review URL
-    if (card.status !== "active" || !card.googleReviewUrl) {
+    if (card.status !== "active" || !card.redirectUrl) {
       return res.redirect("/inactive");
     }
 
@@ -46,7 +46,7 @@ router.get("/r/:cardCode", async (req, res) => {
     });
 
     // Send the customer to the Google review page
-    return res.redirect(card.googleReviewUrl);
+    return res.redirect(card.redirectUrl);
 
   } catch (error) {
     console.error(error);
