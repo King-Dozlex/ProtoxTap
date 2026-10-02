@@ -19,7 +19,6 @@ export default function Cards() {
   const [assigning, setAssigning] = useState<Card | null>(null);
   const [cardCode, setCardCode] = useState("");
   const [businessId, setBusinessId] = useState("");
-  const [reviewUrl, setReviewUrl] = useState("");
   const [saving, setSaving] = useState(false);
 
   const refresh = useCallback(async () => {
@@ -41,7 +40,6 @@ export default function Cards() {
   function openAssign(card: Card) {
     setAssigning(card);
     setBusinessId(card.businessId ? String(card.businessId) : "");
-    setReviewUrl(card.googleReviewUrl ?? "");
     setError("");
     setNotice("");
   }
@@ -69,7 +67,7 @@ export default function Cards() {
     setSaving(true);
     setError("");
     try {
-      await assignCard(assigning.id, { businessId: Number(businessId), googleReviewUrl: reviewUrl.trim() });
+      await assignCard(assigning.id, {businessId: Number(businessId),});
       setAssigning(null);
       setNotice(`${assigning.cardCode} assigned and remains inactive.`);
       await refresh();
@@ -138,7 +136,7 @@ export default function Cards() {
         <div className="data-section-head"><span>{cards.length} {cards.length === 1 ? "card" : "cards"}</span><span>Inventory</span></div>
         {loading ? <div className="page-state">Loading cards...</div> : cards.length === 0 ? <div className="empty-state"><span className="empty-mark">C</span><h2>No cards yet</h2><p>Create a card to start the assignment workflow.</p><button className="button button-secondary" onClick={() => setCreating(true)}>Create your first card</button></div> : <div className="card-list">{cards.map((card) => <article className="card-row" key={card.id}>
           <div className="card-identity"><span className="eyebrow">CARD CODE</span><strong>{card.cardCode}</strong><StatusBadge status={card.status} /></div>
-          <div className="card-meta"><div><span>Business</span><strong>{card.businessName || "Not assigned"}</strong></div><div><span>Google review URL</span>{card.googleReviewUrl ? <a href={card.googleReviewUrl} target="_blank" rel="noreferrer">Open link <span aria-hidden="true">&gt;</span></a> : <strong className="muted">Not set</strong>}</div><div><span>Created</span><strong>{dateLabel(card.createdAt)}</strong></div><div><span>Activated</span><strong>{dateLabel(card.activatedAt)}</strong></div><div><span>Deactivated</span><strong>{dateLabel(card.deactivatedAt)}</strong></div></div>
+          <div className="card-meta"><div><span>Business</span><strong>{card.businessName || "Not assigned"}</strong></div><div><span>Google review URL</span>{card.redirectUrl ? <a href={card.redirectUrl} target="_blank" rel="noreferrer">Open link <span aria-hidden="true">&gt;</span></a> : <strong className="muted">Not set</strong>}</div><div><span>Created</span><strong>{dateLabel(card.createdAt)}</strong></div><div><span>Activated</span><strong>{dateLabel(card.activatedAt)}</strong></div><div><span>Deactivated</span><strong>{dateLabel(card.deactivatedAt)}</strong></div></div>
           <div className="card-actions"><span className="eyebrow">ACTIONS</span><div className="row-actions">
             {card.status === "unassigned" && <button className="button button-secondary button-small" onClick={() => openAssign(card)}>Assign</button>}
             {card.status === "inactive" && <><button className="button button-primary button-small" onClick={() => void runAction(card, "activate")} disabled={workingId === card.id}>{workingId === card.id ? "Working..." : "Activate"}</button><button className="button button-quiet button-small" onClick={() => openAssign(card)}>Reassign</button></>}
@@ -152,12 +150,13 @@ export default function Cards() {
   >
     {workingId === card.id ? "Deleting..." : "Delete"}
   </button>
-)}          </div></div>
+)}
+          </div></div>
         </article>)}</div>}
       </section>
 
       {creating && <Modal title="Create card" onClose={() => !saving && setCreating(false)}>
-        <p className="modal-copy">New cards start unassigned. Assign a business and review URL after creating.</p>
+        <p className="modal-copy">New cards start unassigned. Assign a business to generate the Google review redirect automatically.</p>
         <form className="form-stack" onSubmit={submitCreate}>
           <label className="field"><span>Card code</span><input value={cardCode} onChange={(event) => setCardCode(event.target.value)} placeholder="PT-0001" required autoFocus /></label>
           {error && <div className="notice notice-error" role="alert">{error}</div>}
@@ -169,7 +168,6 @@ export default function Cards() {
         <p className="modal-copy"><strong>{assigning.cardCode}</strong> will remain inactive after assignment.</p>
         <form className="form-stack" onSubmit={submitAssign}>
           <label className="field"><span>Business</span><select value={businessId} onChange={(event) => setBusinessId(event.target.value)} required><option value="">Select a business</option>{businesses.map((business) => <option value={business.id} key={business.id}>{business.businessName}</option>)}</select></label>
-          <label className="field"><span>Google review URL</span><input type="url" value={reviewUrl} onChange={(event) => setReviewUrl(event.target.value)} placeholder="https://g.page/r/..." required /></label>
           {businesses.length === 0 && <div className="notice notice-error">Add a business before assigning a card.</div>}
           {error && <div className="notice notice-error" role="alert">{error}</div>}
           <div className="modal-actions"><button className="button button-quiet" type="button" onClick={() => setAssigning(null)} disabled={saving}>Cancel</button><button className="button button-primary" type="submit" disabled={saving || businesses.length === 0}>{saving ? "Saving..." : "Save as inactive"}</button></div>

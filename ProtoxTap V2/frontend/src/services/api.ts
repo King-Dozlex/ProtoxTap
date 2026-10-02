@@ -20,7 +20,7 @@ export interface Card {
   cardCode: string;
   businessId: number | null;
   businessName: string | null;
-  googleReviewUrl: string | null;
+  redirectUrl: string | null;
   status: CardStatus;
   createdAt: string;
   activatedAt: string | null;
@@ -43,7 +43,6 @@ export interface BusinessInput {
 
 export interface AssignCardInput {
   businessId: number;
-  googleReviewUrl: string;
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
