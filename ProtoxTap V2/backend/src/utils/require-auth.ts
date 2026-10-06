@@ -1,8 +1,12 @@
 import type { Request, Response, NextFunction } from "express";
 import { getSession } from "./session";
 
+export type AuthRequest = Request & {
+  session: Awaited<ReturnType<typeof getSession>>;
+};
+
 export async function requireAuth(
-  req: Request,
+  req: AuthRequest,
   res: Response,
   next: NextFunction
 ) {
@@ -15,7 +19,12 @@ export async function requireAuth(
       });
     }
 
+    req.session = session;
+
+    console.log("AUTH SESSION SET:", req.session);
+
     next();
+
   } catch (error) {
     console.error(error);
 
