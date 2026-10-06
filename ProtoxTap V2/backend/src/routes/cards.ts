@@ -1,10 +1,12 @@
+import { requireAuth } from "../utils/require-auth";
+import type { AuthRequest } from "../utils/require-auth";
+import { createAuditLog } from "../services/audit-log";
 
 import { Router } from "express";
 import { asc, eq } from "drizzle-orm";
 
 import { db } from "../../db/index";
 import { businesses, cards, cardEvents } from "../../db/schema";
-import { requireAuth } from "../utils/require-auth";
 
 const router = Router();
 
@@ -12,7 +14,7 @@ router.use(requireAuth);
 
 
 // GET ALL CARDS
-router.get("/", async (_req, res) => {
+router.get("/", async (_req: AuthRequest, res) => {
   try {
     const result = await db
       .select()
@@ -32,7 +34,7 @@ router.get("/", async (_req, res) => {
 
 
 // GET SINGLE CARD
-router.get("/:id", async (req, res) => {
+router.get("/:id", async (req: AuthRequest, res) => {
   try {
     const id = Number(req.params.id);
 
@@ -68,11 +70,9 @@ router.get("/:id", async (req, res) => {
 
 
 // CREATE CARD
-router.post("/", async (req, res) => {
+router.post("/", async (req: AuthRequest, res) => {
   try {
-    const {
-      cardCode,
-    } = req.body;
+    const { cardCode } = req.body;
 
 
     if (!cardCode) {
@@ -91,6 +91,15 @@ router.post("/", async (req, res) => {
       .returning();
 
 
+    await createAuditLog({
+      adminUserId: req.session.adminUserId,
+      action: "CREATED_CARD",
+      targetType: "CARD",
+      targetId: result[0].id,
+      targetLabel: result[0].cardCode,
+    });
+
+
     res.status(201).json(result[0]);
 
 
@@ -105,7 +114,7 @@ router.post("/", async (req, res) => {
 
 
 // ASSIGN CARD TO BUSINESS
-router.post("/:id/assign", async (req, res) => {
+router.post("/:id/assign", async (req: AuthRequest, res) => {
   try {
     const id = Number(req.params.id);
     const { businessId } = req.body;
@@ -196,6 +205,19 @@ router.post("/:id/assign", async (req, res) => {
     });
 
 
+    await createAuditLog({
+      adminUserId: req.session.adminUserId,
+      action: "ASSIGNED_CARD",
+      targetType: "CARD",
+      targetId: id,
+      targetLabel: card.cardCode,
+      details: {
+        businessId: Number(businessId),
+        businessName: business.businessName,
+      },
+    });
+
+
     res.json(result[0]);
 
 
@@ -210,7 +232,7 @@ router.post("/:id/assign", async (req, res) => {
 
 
 // ACTIVATE CARD
-router.post("/:id/activate", async (req, res) => {
+router.post("/:id/activate", async (req: AuthRequest, res) => {
   try {
     const id = Number(req.params.id);
 
@@ -256,6 +278,18 @@ router.post("/:id/activate", async (req, res) => {
     });
 
 
+    await createAuditLog({
+      adminUserId: req.session.adminUserId,
+      action: "ACTIVATED_CARD",
+      targetType: "CARD",
+      targetId: id,
+      targetLabel: card.cardCode,
+      details: {
+        businessId: card.businessId,
+      },
+    });
+
+
     res.json(result[0]);
 
 
@@ -270,9 +304,26 @@ router.post("/:id/activate", async (req, res) => {
 
 
 // DEACTIVATE CARD
-router.post("/:id/deactivate", async (req, res) => {
+router.post("/:id/deactivate", async (req: AuthRequest, res) => {
   try {
     const id = Number(req.params.id);
+
+
+    const cardResult = await db
+      .select()
+      .from(cards)
+      .where(eq(cards.id, id))
+      .limit(1);
+
+
+    if (cardResult.length === 0) {
+      return res.status(404).json({
+        error: "Card not found.",
+      });
+    }
+
+
+    const card = cardResult[0];
 
 
     const result = await db
@@ -285,16 +336,21 @@ router.post("/:id/deactivate", async (req, res) => {
       .returning();
 
 
-    if (result.length === 0) {
-      return res.status(404).json({
-        error: "Card not found.",
-      });
-    }
-
-
     await db.insert(cardEvents).values({
       cardId: id,
       eventType: "deactivated",
+    });
+
+
+    await createAuditLog({
+      adminUserId: req.session.adminUserId,
+      action: "DEACTIVATED_CARD",
+      targetType: "CARD",
+      targetId: id,
+      targetLabel: card.cardCode,
+      details: {
+        businessId: card.businessId,
+      },
     });
 
 
@@ -310,9 +366,17 @@ router.post("/:id/deactivate", async (req, res) => {
   }
 });
 
-router.delete("/:id", async (req, res) => {
+
+// DELETE CARD
+// Default behaviour: block deletion if history exists.
+// Force deletion removes history after confirmation.
+router.delete("/:id", async (req: AuthRequest, res) => {
   try {
     const id = Number(req.params.id);
+    console.log("DELETE BODY:", req.body);
+
+    const force = req.body?.force === true;
+
 
     if (!Number.isInteger(id)) {
       return res.status(400).json({
@@ -320,11 +384,13 @@ router.delete("/:id", async (req, res) => {
       });
     }
 
+
     const cardResult = await db
       .select()
       .from(cards)
       .where(eq(cards.id, id))
       .limit(1);
+
 
     if (cardResult.length === 0) {
       return res.status(404).json({
@@ -332,7 +398,9 @@ router.delete("/:id", async (req, res) => {
       });
     }
 
+
     const card = cardResult[0];
+
 
     if (card.status === "active") {
       return res.status(409).json({
@@ -340,13 +408,52 @@ router.delete("/:id", async (req, res) => {
       });
     }
 
+
+    const events = await db
+      .select()
+      .from(cardEvents)
+      .where(eq(cardEvents.cardId, id));
+
+
+    if (events.length > 0 && !force) {
+      return res.status(409).json({
+        error: "Card has history. Enable force deletion to remove it.",
+        requiresForce: true,
+      });
+    }
+
+
+    if (force) {
+      await db
+        .delete(cardEvents)
+        .where(eq(cardEvents.cardId, id));
+    }
+
+
     await db
       .delete(cards)
       .where(eq(cards.id, id));
 
-    res.json({
-      message: "Card deleted.",
+
+    await createAuditLog({
+      adminUserId: req.session.adminUserId,
+      action: force ? "FORCE_DELETED_CARD" : "DELETED_CARD",
+      targetType: "CARD",
+      targetId: id,
+      targetLabel: card.cardCode,
+      details: {
+        businessId: card.businessId,
+        deletedHistoryRecords: events.length,
+      },
     });
+
+
+    res.json({
+      message: force
+        ? "Card and history deleted."
+        : "Card deleted.",
+    });
+
 
   } catch (error) {
     console.error(error);
@@ -356,5 +463,6 @@ router.delete("/:id", async (req, res) => {
     });
   }
 });
+
 
 export default router;
