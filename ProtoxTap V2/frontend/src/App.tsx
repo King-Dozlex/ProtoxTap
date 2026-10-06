@@ -7,6 +7,7 @@ import Cards from "./pages/Cards";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 
+
 function ProtectedRoute() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -36,7 +37,6 @@ function ProtectedRoute() {
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/admin" replace />} />
       <Route path="/admin/login" element={<Login />} />
       <Route element={<ProtectedRoute />}>
         <Route path="/admin" element={<AdminLayout />}>

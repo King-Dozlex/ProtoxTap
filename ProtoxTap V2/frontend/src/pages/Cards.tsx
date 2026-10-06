@@ -20,6 +20,9 @@ export default function Cards() {
   const [cardCode, setCardCode] = useState("");
   const [businessId, setBusinessId] = useState("");
   const [saving, setSaving] = useState(false);
+  const [deleteCandidate, setDeleteCandidate] = useState<Card | null>(null);
+  const [forceDeleteCard, setForceDeleteCard] = useState<Card | null>(null);
+  const [forceDeleteConfirmed, setForceDeleteConfirmed] = useState(false);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -94,28 +97,33 @@ export default function Cards() {
     }
   }
 
-  async function runDelete(card: Card) {
-    const confirmed = window.confirm(
-      `Delete ${card.cardCode}?\n\nThis permanently removes the card from ProtoxTap.`
-    );
-
-    if (!confirmed) return;
-
+  async function runDelete(card: Card, force = false) {
     setWorkingId(card.id);
     setError("");
     setNotice("");
 
     try {
-      await deleteCard(card.id);
+      await deleteCard(card.id, force);
 
       setNotice(`${card.cardCode} deleted.`);
+      setDeleteCandidate(null);
+      setForceDeleteCard(null);
+      setForceDeleteConfirmed(false);
       await refresh();
+
     } catch (reason) {
-      setError(
+      const message =
         reason instanceof Error
           ? reason.message
-          : "Unable to delete card."
-      );
+          : "Unable to delete card.";
+
+      if (message.includes("history")) {
+        setForceDeleteCard(card);
+        setForceDeleteConfirmed(false);
+      } else {
+        setError(message);
+      }
+
     } finally {
       setWorkingId(null);
     }
@@ -145,7 +153,7 @@ export default function Cards() {
 {card.status !== "active" && (
   <button
     className="button button-danger-quiet button-small"
-    onClick={() => void runDelete(card)}
+    onClick={() => setDeleteCandidate(card)}
     disabled={workingId === card.id}
   >
     {workingId === card.id ? "Deleting..." : "Delete"}
@@ -154,6 +162,14 @@ export default function Cards() {
           </div></div>
         </article>)}</div>}
       </section>
+
+      {deleteCandidate && <Modal title="Delete card?" onClose={() => setDeleteCandidate(null)}>
+        <p className="modal-copy"><strong>{deleteCandidate.cardCode}</strong> will be permanently removed. If it has history, you will be asked to confirm before that history is removed.</p>
+        <div className="modal-actions">
+          <button className="button button-quiet" type="button" onClick={() => setDeleteCandidate(null)}>Keep card</button>
+          <button className="button button-danger-quiet" type="button" onClick={() => { const card = deleteCandidate; setDeleteCandidate(null); void runDelete(card); }}>Delete card</button>
+        </div>
+      </Modal>}
 
       {creating && <Modal title="Create card" onClose={() => !saving && setCreating(false)}>
         <p className="modal-copy">New cards start unassigned. Assign a business to generate the Google review redirect automatically.</p>
@@ -173,6 +189,72 @@ export default function Cards() {
           <div className="modal-actions"><button className="button button-quiet" type="button" onClick={() => setAssigning(null)} disabled={saving}>Cancel</button><button className="button button-primary" type="submit" disabled={saving || businesses.length === 0}>{saving ? "Saving..." : "Save as inactive"}</button></div>
         </form>
       </Modal>}
+    {forceDeleteCard && (
+  <Modal
+    title="Force delete card"
+    onClose={() => {
+      setForceDeleteCard(null);
+      setForceDeleteConfirmed(false);
+    }}
+  >
+    <p className="modal-copy">
+      <strong>{forceDeleteCard.cardCode}</strong> has existing history.
+    </p>
+
+    <p className="modal-copy">
+      Force deletion will permanently remove:
+    </p>
+
+    <ul>
+      <li>The card</li>
+      <li>Activation history</li>
+      <li>Assignment history</li>
+      <li>Tracking events</li>
+    </ul>
+
+    <p className="modal-copy">
+      <strong>
+        ⚠️ This action cannot be undone.
+      </strong>
+    </p>
+
+    <label className="field">
+      <span>
+        <input
+          type="checkbox"
+          checked={forceDeleteConfirmed}
+          onChange={(event) =>
+            setForceDeleteConfirmed(event.target.checked)
+          }
+        />
+        {" "}
+        I understand this permanently deletes this card and its history.
+      </span>
+    </label>
+
+    <div className="modal-actions">
+      <button
+        className="button button-quiet"
+        onClick={() => {
+          setForceDeleteCard(null);
+          setForceDeleteConfirmed(false);
+        }}
+      >
+        Cancel
+      </button>
+
+      <button
+        className="button button-danger-quiet"
+        disabled={!forceDeleteConfirmed || workingId === forceDeleteCard.id}
+        onClick={() =>
+          void runDelete(forceDeleteCard, true)
+        }
+      >
+        Permanently Delete
+      </button>
+    </div>
+  </Modal>
+)}
     </>
   );
 }

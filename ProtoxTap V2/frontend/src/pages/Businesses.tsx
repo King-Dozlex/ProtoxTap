@@ -84,18 +84,18 @@ export default function Businesses() {
       <section className="data-section">
         <div className="data-section-head"><span>{businesses.length} {businesses.length === 1 ? "business" : "businesses"}</span><span>Business directory</span></div>
         {loading ? <div className="page-state">Loading businesses...</div> : businesses.length === 0 ? <div className="empty-state"><span className="empty-mark">B</span><h2>No businesses yet</h2><p>Add a business to start assigning review cards.</p><button className="button button-secondary" onClick={() => openForm()}>Add your first business</button></div> : <>
-          <div className="business-table-wrap"><table className="business-table"><thead><tr><th>Business</th><th>Contact</th><th>Email / Phone</th><th>Notes</th><th><span className="sr-only">Actions</span></th></tr></thead><tbody>
+          <div className="business-table-wrap" style={{ overflowX: "auto" }}><table className="business-table" style={{ minWidth: 760 }}><thead><tr><th>Business</th><th>Contact</th><th>Email</th><th>Phone</th><th><span className="sr-only">Actions</span></th></tr></thead><tbody>
             {businesses.map((business) => <tr key={business.id}>
               <td data-label="Business"><strong>{business.businessName}</strong></td>
               <td data-label="Contact">{business.contactName || <span className="muted">Not set</span>}</td>
-              <td data-label="Email / Phone"><span className="contact-stack">{business.email || <span className="muted">No email</span>}{business.phone || <span className="muted">No phone</span>}</span></td>
-              <td data-label="Notes" className="notes-cell">{business.notes || <span className="muted">—</span>}</td>
+              <td data-label="Email">{business.email || <span className="muted">—</span>}</td>
+              <td data-label="Phone">{business.phone || <span className="muted">—</span>}</td>
               <td data-label="Actions"><div className="row-actions"><button className="button button-quiet button-small" onClick={() => openForm(business)}>Edit</button><button className="button button-danger-quiet button-small" onClick={() => void removeBusiness(business)}>Delete</button></div></td>
             </tr>)}
           </tbody></table></div>
           <div className="business-card-list">{businesses.map((business) => <article className="business-card" key={business.id}>
             <div className="business-card-title"><div><span className="eyebrow">BUSINESS</span><h2>{business.businessName}</h2></div><div className="row-actions"><button className="button button-quiet button-small" onClick={() => openForm(business)}>Edit</button><button className="button button-danger-quiet button-small" onClick={() => void removeBusiness(business)}>Delete</button></div></div>
-            <dl className="business-details"><div><dt>Contact</dt><dd>{business.contactName || "Not set"}</dd></div><div><dt>Email</dt><dd>{business.email || "Not set"}</dd></div><div><dt>Phone</dt><dd>{business.phone || "Not set"}</dd></div><div><dt>Notes</dt><dd>{business.notes || "None"}</dd></div></dl>
+            <dl className="business-details"><div><dt>Contact</dt><dd>{business.contactName || "Not set"}</dd></div><div><dt>Email</dt><dd>{business.email || "—"}</dd></div><div><dt>Phone</dt><dd>{business.phone || "—"}</dd></div></dl>
           </article>)}</div>
         </>}
       </section>
