@@ -1,86 +1,86 @@
-const header = document.querySelector('.site-header');
-const menuToggle = document.querySelector('.menu-toggle');
-const siteMenu = document.querySelector('.site-menu');
-const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const menuButton = document.querySelector(".menu-toggle");
+const siteMenu = document.querySelector("#site-menu");
 
-// Keep the mobile menu small and predictable: it closes after navigation and on Escape.
-menuToggle?.addEventListener('click', () => {
-    const isOpen = siteMenu.classList.toggle('open');
-    menuToggle.setAttribute('aria-expanded', String(isOpen));
-});
+if (menuButton && siteMenu) {
+    const closeMenu = () => {
+        menuButton.setAttribute("aria-expanded", "false");
+        menuButton.setAttribute("aria-label", "Open navigation menu");
+        siteMenu.classList.remove("is-open");
+    };
 
-siteMenu?.querySelectorAll('a').forEach((link) => {
-    link.addEventListener('click', () => {
-        siteMenu.classList.remove('open');
-        menuToggle.setAttribute('aria-expanded', 'false');
+    menuButton.addEventListener("click", () => {
+        const isOpen = menuButton.getAttribute("aria-expanded") !== "true";
+        menuButton.setAttribute("aria-expanded", String(isOpen));
+        menuButton.setAttribute("aria-label", isOpen ? "Close navigation menu" : "Open navigation menu");
+        siteMenu.classList.toggle("is-open", isOpen);
     });
-});
 
-document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') {
-        siteMenu?.classList.remove('open');
-        menuToggle?.setAttribute('aria-expanded', 'false');
-    }
-});
+    siteMenu.querySelectorAll("a").forEach((link) => link.addEventListener("click", closeMenu));
 
-const updateHeader = () => header.classList.toggle('scrolled', window.scrollY > 20);
-updateHeader();
-window.addEventListener('scroll', updateHeader, { passive: true });
-
-const revealObserver = new IntersectionObserver((entries, observer) => {
-    entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-            entry.target.classList.add('visible');
-            observer.unobserve(entry.target);
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && siteMenu.classList.contains("is-open")) {
+            closeMenu();
+            menuButton.focus();
         }
     });
-}, { threshold: 0.12 });
 
-document.querySelectorAll('.reveal').forEach((element) => revealObserver.observe(element));
-
-const demo = document.querySelector('[data-demo]');
-const statusMessage = demo?.querySelector('.status-message');
-const statusStep = demo?.querySelector('.status-step');
-let demoTimer;
-
-const runDemo = () => {
-    if (!demo) return;
-    window.clearTimeout(demoTimer);
-    demo.classList.remove('is-running');
-    if (prefersReducedMotion) {
-        demo.classList.add('is-running');
-        if (statusMessage) statusMessage.textContent = 'Review page ready';
-        if (statusStep) statusStep.textContent = '03 / 03';
-        return;
-    }
-    if (statusMessage) statusMessage.textContent = 'Bring your phone closer';
-    if (statusStep) statusStep.textContent = '01 / 03';
-    requestAnimationFrame(() => demo.classList.add('is-running'));
-    demoTimer = window.setTimeout(() => {
-        if (statusMessage) statusMessage.textContent = 'Review page ready';
-        if (statusStep) statusStep.textContent = '03 / 03';
-    }, 4000);
-};
-
-const demoObserver = new IntersectionObserver((entries, observer) => {
-    if (entries.some((entry) => entry.isIntersecting)) {
-        runDemo();
-        observer.disconnect();
-    }
-}, { threshold: 0.35 });
-if (demo) demoObserver.observe(demo);
-document.querySelector('.demo-replay')?.addEventListener('click', runDemo);
-
-// The product tilt is intentionally limited so it remains a subtle physical response, not a distraction.
-if (!prefersReducedMotion && window.matchMedia('(min-width: 801px)').matches) {
-    document.querySelectorAll('[data-tilt]').forEach((card) => {
-        card.addEventListener('pointermove', (event) => {
-            const bounds = card.getBoundingClientRect();
-            const x = (event.clientX - bounds.left) / bounds.width - 0.5;
-            const y = (event.clientY - bounds.top) / bounds.height - 0.5;
-            const baseRotation = card.classList.contains('product-large') ? -13 : 0;
-            card.style.transform = `perspective(800px) rotateX(${y * -5}deg) rotateY(${x * 7}deg) rotateZ(${baseRotation + x * 3}deg)`;
-        });
-        card.addEventListener('pointerleave', () => { card.style.transform = ''; });
+    document.addEventListener("click", (event) => {
+        if (siteMenu.classList.contains("is-open") && !siteMenu.contains(event.target) && !menuButton.contains(event.target)) {
+            closeMenu();
+        }
     });
+}
+
+const faqList = document.querySelector(".faq-list");
+
+if (faqList) {
+    const closingTimers = new WeakMap();
+    const faqItems = [...faqList.querySelectorAll("details")];
+
+    faqItems.forEach((item) => {
+        const summary = item.querySelector("summary");
+        if (!summary) return;
+
+        summary.addEventListener("click", (event) => {
+            event.preventDefault();
+            window.clearTimeout(closingTimers.get(item));
+
+            if (item.open && !item.classList.contains("is-closing")) {
+                item.classList.add("is-closing");
+                const delay = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 240;
+                closingTimers.set(item, window.setTimeout(() => {
+                    item.open = false;
+                    item.classList.remove("is-closing");
+                }, delay));
+                return;
+            }
+
+            item.open = true;
+            item.classList.remove("is-closing");
+        });
+    });
+
+    faqList.classList.add("is-enhanced");
+}
+
+const motionTargets = document.querySelectorAll("[data-reveal], [data-motion-active]");
+const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+if (motionTargets.length && "IntersectionObserver" in window && !prefersReducedMotion.matches) {
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            const target = entry.target;
+            if (entry.isIntersecting) {
+                target.classList.add("is-visible", "is-active");
+                if (target.hasAttribute("data-reveal") && !target.hasAttribute("data-motion-active")) {
+                    observer.unobserve(target);
+                }
+            } else {
+                target.classList.remove("is-active");
+            }
+        });
+    }, { threshold: 0.16, rootMargin: "0px 0px -5% 0px" });
+
+    motionTargets.forEach((target) => observer.observe(target));
+    document.body.classList.add("motion-ready");
 }
