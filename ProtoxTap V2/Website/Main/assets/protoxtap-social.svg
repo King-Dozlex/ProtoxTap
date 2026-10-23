@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#f7f8f5"/>
+  <circle cx="898" cy="315" r="240" fill="#edf2e9"/>
+  <circle cx="898" cy="315" r="170" fill="none" stroke="#dce5da" stroke-width="2"/>
+  <rect x="735" y="233" width="326" height="206" rx="23" fill="#1d4938" transform="rotate(-7 898 336)"/>
+  <path d="M820 308h30a20 20 0 0 1 0 40h-12v22h-18v-62Zm18 16v9h11a4.5 4.5 0 0 0 0-9h-11Z" fill="#e3c477"/>
+  <path d="M889 341c0-17 14-31 31-31m-31 31c0-34 28-62 62-62m-62 62c0-51 42-93 93-93" fill="none" stroke="#e3c477" stroke-linecap="round" stroke-width="4"/>
+  <text x="85" y="275" fill="#19271f" font-family="Arial, sans-serif" font-size="70" font-weight="700">Protox<tspan fill="#28644d">Tap</tspan></text>
+  <text x="88" y="356" fill="#3e4c43" font-family="Arial, sans-serif" font-size="33">A simple way to reach your</text>
+  <text x="88" y="403" fill="#28644d" font-family="Arial, sans-serif" font-size="33">chosen review page.</text>
+</svg>

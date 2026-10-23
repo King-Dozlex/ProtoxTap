@@ -28,18 +28,23 @@ export default function AdminLayout() {
           <span className="brand-mark">P</span>
           <span>Protox<span className="brand-light">Tap</span><small>ADMIN</small></span>
         </NavLink>
-        <nav className="main-nav" aria-label="Main navigation">
-          <NavLink end to="/admin">Dashboard</NavLink>
-          <NavLink to="/admin/businesses">Businesses</NavLink>
-          <NavLink to="/admin/cards">Cards</NavLink>
-        </nav>
         <div className="account-area">
+          <span className="account-avatar" aria-hidden="true">{user.username.slice(0, 1).toUpperCase()}</span>
           <span className="account-name">{user.username}</span>
           <button className="button button-quiet button-small" onClick={handleLogout} disabled={loggingOut}>
             {loggingOut ? "Logging out..." : "Log out"}
           </button>
         </div>
       </header>
+      <aside className="side-panel">
+        <span className="side-label">WORKSPACE</span>
+        <nav className="main-nav" aria-label="Main navigation">
+          <NavLink end to="/admin"><span className="nav-icon" aria-hidden="true">01</span>Dashboard</NavLink>
+          <NavLink to="/admin/businesses"><span className="nav-icon" aria-hidden="true">02</span>Businesses</NavLink>
+          <NavLink to="/admin/cards"><span className="nav-icon" aria-hidden="true">03</span>Cards</NavLink>
+        </nav>
+        <div className="side-note"><span className="live-indicator"><i /> All systems ready</span><p>Manage your review cards and the businesses they support.</p></div>
+      </aside>
       <main className="main-content">
         {error && <div className="notice notice-error" role="alert">{error}</div>}
         <Outlet />

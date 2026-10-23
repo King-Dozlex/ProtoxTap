@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Read how ProtoxTap's website and card redirection service handle information, account sessions and tap events.">
+    <meta name="theme-color" content="#f7f8f5">
+    <link rel="canonical" href="https://www.protoxtap.com/privacy.html">
+    <link rel="icon" href="/assets/protoxtap-mark.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/style.css">
+    <meta property="og:title" content="Privacy Notice | ProtoxTap">
+    <meta property="og:description" content="How ProtoxTap handles information in its website and card redirection service.">
+    <meta property="og:url" content="https://www.protoxtap.com/privacy.html">
+    <title>Privacy Notice | ProtoxTap</title>
+    <script src="/script.js" defer></script>
+</head>
+<body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header">
+        <nav class="nav shell" aria-label="Main navigation">
+            <a class="brand" href="/" aria-label="ProtoxTap home"><span class="brand-mark" aria-hidden="true">P</span><span>Protox<span class="brand-accent">Tap</span></span></a>
+            <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open navigation menu"><span></span><span></span><span></span></button>
+            <div class="site-menu" id="site-menu">
+                <a href="/">Home</a><a href="/#how-it-works">How it works</a><a href="/#pricing">Pricing</a><a href="/#contact">Contact</a>
+                <a class="button button-small button-dark" href="mailto:protoxbusinesses@gmail.com">Contact us</a>
+            </div>
+        </nav>
+    </header>
+    <main class="legal-main shell" id="main">
+        <div class="legal-heading">
+            <p class="eyebrow">ProtoxTap / Information</p>
+            <h1>Privacy Notice</h1>
+            <p>Last updated: 14 October 2026. This is a practical draft based on the code currently available; it is not a guarantee of legal compliance.</p>
+        </div>
+        <article class="legal-content">
+            <h2>About this notice</h2>
+            <p>This notice covers the public ProtoxTap website, the hosted NFC-card redirection service and the separate administration tools visible in the project. ProtoxTap is the service name. The legal identity and contact address of the operator have not been confirmed in the available project information; those details and the operator's data-controller role must be confirmed before launch where required.</p>
+            <p>For a privacy question, contact <a href="mailto:protoxbusinesses@gmail.com">protoxbusinesses@gmail.com</a> or call <a href="tel:+447923910153">07923 910153</a>.</p>
+
+            <h2>Information the service handles</h2>
+            <h3>Business and account information</h3>
+            <p>The administration system can store a business name, contact name, email address, phone number, notes and a Google Place ID. These details are entered by an administrator when creating or updating a business record. The project does not contain a public customer account or sign-up form.</p>
+            <h3>Cards and service events</h3>
+            <p>The database stores card identifiers, the associated business, configured redirect destination, card status and creation, activation and deactivation times. It stores event type and timestamp records for service events, including active card taps. A tap event is associated with a card record; the current event schema does not store a visitor's name, IP address or user-agent string. The public card route records an event for an active card before redirecting it. An inactive card is directed to the inactive-card page instead.</p>
+            <p>Card event history may remain in the database until an administrator removes it with the card record. The code has no general event-retention schedule. A forced card deletion removes its event records; ordinary deletion is blocked while history exists.</p>
+            <h3>Administration and authentication</h3>
+            <p>Administrative records include a username and a password hash. The code hashes passwords using scrypt with a random salt. Successful sign-in creates a random session token; a hash of the token is stored in the database. The browser receives a <code>protoxtap_session</code> cookie configured as HttpOnly and SameSite=Lax, with a seven-day expiry. The current code does not set the Secure cookie attribute; deployment configuration must be checked and this should be addressed before production use. Expired session records are removed when checked by the application.</p>
+            <p>Administrative action records are created for card operations and can include the administrator, action, card or related business identifiers and labels, event time and action-specific details. They are not a complete record of every administration action and do not have a configured retention period in the code.</p>
+            <p>Some backend diagnostic logging writes business names, Google Place IDs, administrative session-record values and error details to the application console. The production log destination, access controls and retention period are not identified in this project. These logs need an owner review and appropriate minimisation before launch.</p>
+
+            <h2>Why information is used</h2>
+            <ul>
+                <li>Business and card records are used to configure and operate hosted card redirection.</li>
+                <li>Tap and card-lifecycle events are recorded to operate the service and maintain service history. A customer-facing analytics dashboard is not currently available.</li>
+                <li>Account information and session records support restricted administration.</li>
+                <li>Administrative action records provide a history of changes made through the administration tools.</li>
+            </ul>
+            <p>The operator has not documented a lawful basis for each purpose. The appropriate lawful basis, any additional purposes and the operator's controller/processor roles must be determined before launch; no specific lawful basis is asserted by this draft.</p>
+
+            <h2>Cookies, storage and analytics</h2>
+            <p>The public landing and legal pages do not set cookies or use local storage, session storage, analytics scripts or advertising trackers in the code inspected. They do not load third-party fonts, scripts, images, embeds or stylesheets. The Protox Webpages link and email links only contact those destinations if you choose to follow them.</p>
+            <p>The separate administration sign-in uses the session cookie described above. No browser local-storage or session-storage use was found in the administration source inspected. Hosting, proxy and infrastructure logs may process technical request data; the providers and their log settings have not been identified in this project, so this notice cannot confirm whether those providers record IP addresses or how long they retain logs.</p>
+
+            <h2>Recipients and external services</h2>
+            <p>Business, card, session and administrative records are stored through a PostgreSQL database connection. The hosting and database providers, locations, contractual terms and any other infrastructure recipients are not identified in the source code available for this review and must be documented by the operator.</p>
+            <p>The administration backend sends a business name to the Google Places API when an administrator creates or updates a business record to look up a Place ID. When a customer taps an active card, the browser is redirected to the configured review destination, which in the current card-assignment code is a Google review link. Google then handles the request under its own terms and privacy information. The public landing page itself does not embed a Google interface.</p>
+            <p>The website links to Protox Webpages and opens an email draft through the visitor's configured email handler only when those links are used. Those destinations have their own privacy practices.</p>
+
+            <h2>Security and retention</h2>
+            <p>The code uses password hashing with scrypt, random session tokens and stores a hash of each session token. These implementation details are not a guarantee of security. The production transport-security configuration, database access controls, backups, hosting safeguards, incident process and retention periods have not been verified. The operator must confirm those arrangements and set appropriate retention periods before launch.</p>
+
+            <h2>Your choices and rights</h2>
+            <p>Depending on the circumstances and applicable law, people may have rights to access, correct, delete or restrict use of personal information, object to certain processing, request portability, or complain to a supervisory authority. To make a request or ask a question, contact <a href="mailto:protoxbusinesses@gmail.com">protoxbusinesses@gmail.com</a> or call <a href="tel:+447923910153">07923 910153</a>. You may also contact the UK Information Commissioner's Office at <a href="https://ico.org.uk/make-a-complaint/" rel="noopener">ico.org.uk</a>. The operator's identity, applicable roles and response process must be confirmed before launch.</p>
+
+            <h2>Changes and contact</h2>
+            <p>This notice should be reviewed when the service, providers or data practices change. Send privacy questions to <a href="mailto:protoxbusinesses@gmail.com">protoxbusinesses@gmail.com</a> or call <a href="tel:+447923910153">07923 910153</a>.</p>
+            <nav class="legal-footer-nav" aria-label="Other legal information">
+                <a href="/terms.html">Terms of Service</a>
+                <a href="/cancellation-refunds.html">Cancellation and Refund Policy</a>
+                <a href="/">Back to ProtoxTap</a>
+            </nav>
+        </article>
+    </main>
+    <footer class="site-footer"><div class="shell footer-bottom"><p>© 2026 ProtoxTap. All rights reserved.</p><p class="independence-disclaimer">ProtoxTap is an independent service and is not affiliated with or endorsed by Google. Reviews are voluntary and should reflect genuine customer experiences. ProtoxTap does not guarantee any particular number, rating or outcome of reviews.</p></div></footer>
+</body>
+</html>

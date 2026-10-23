@@ -27,9 +27,15 @@ export interface Card {
   deactivatedAt: string | null;
 }
 
-export async function deleteCard(id: number): Promise<void> {
+export async function deleteCard(
+  id: number,
+  force = false
+): Promise<void> {
   await request(`/api/cards/${id}`, {
     method: "DELETE",
+    body: JSON.stringify({
+      force,
+    }),
   });
 }
 

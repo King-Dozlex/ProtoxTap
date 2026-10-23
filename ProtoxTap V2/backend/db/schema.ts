@@ -1,9 +1,10 @@
 import {
-  integer,
   pgTable,
   serial,
   text,
+  integer,
   timestamp,
+  jsonb,
 } from "drizzle-orm/pg-core";
 
 export const businesses = pgTable("businesses", {
@@ -65,4 +66,26 @@ export const sessions = pgTable("sessions", {
   expiresAt: timestamp("expires_at").notNull(),
 
   createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const adminActions = pgTable("admin_actions", {
+  id: serial("id").primaryKey(),
+
+  adminUserId: integer("admin_user_id")
+    .notNull()
+    .references(() => adminUsers.id),
+
+  action: text("action").notNull(),
+
+  targetType: text("target_type").notNull(),
+
+  targetId: integer("target_id"),
+
+  targetLabel: text("target_label"),
+
+  details: jsonb("details"),
+
+  createdAt: timestamp("created_at")
+    .defaultNow()
+    .notNull(),
 });

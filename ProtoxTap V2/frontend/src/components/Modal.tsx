@@ -1,4 +1,4 @@
-import type { FormEvent, ReactNode } from "react";
+import { useEffect, type FormEvent, type ReactNode } from "react";
 
 export default function Modal({
   title,
@@ -9,6 +9,14 @@ export default function Modal({
   onClose: () => void;
   children: ReactNode;
 }) {
+  useEffect(() => {
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [onClose]);
+
   function stopSubmit(event: FormEvent) {
     event.preventDefault();
   }
@@ -20,7 +28,7 @@ export default function Modal({
       <section className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modal-title" onSubmit={stopSubmit}>
         <div className="modal-heading">
           <h2 id="modal-title">{title}</h2>
-          <button className="icon-button" type="button" onClick={onClose} aria-label="Close dialog">x</button>
+          <button className="icon-button" type="button" onClick={onClose} aria-label="Close dialog">×</button>
         </div>
         {children}
       </section>
