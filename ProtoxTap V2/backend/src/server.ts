@@ -38,6 +38,13 @@ app.get("/admin", (_req, res) => {
 
 app.use("/admin", express.static(adminPath));
 
+app.get(
+  ["/admin/login", "/admin/businesses", "/admin/cards"],
+  (_req, res) => {
+    res.sendFile(path.join(adminPath, "index.html"));
+  }
+);
+
 // Inactive card page
 app.get("/inactive", (_req, res) => {
   res.sendFile(path.join(inactivePath, "index.html"));
@@ -55,7 +62,7 @@ const server = app.listen(PORT, "127.0.0.1", () => {
 });
 
 server.on("error", (error) => {
-  console.error("SERVER ERROR:", error);
+  console.error("Express server error.");
 });
 
 server.on("close", () => {

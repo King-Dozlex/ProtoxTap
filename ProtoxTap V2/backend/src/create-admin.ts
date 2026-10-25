@@ -26,22 +26,21 @@ async function main() {
 
   const passwordHash = hashPassword(password);
 
-  const result = await db
+  await db
     .insert(schema.adminUsers)
     .values({
       username,
       passwordHash,
-    })
-    .returning();
+    });
 
-  console.log(`Admin created: ${result[0].username}`);
+  console.log("Admin account created.");
 
   rl.close();
   process.exit(0);
 }
 
 main().catch((error) => {
-  console.error(error);
+  console.error("Admin account creation failed.");
   rl.close();
   process.exit(1);
 });

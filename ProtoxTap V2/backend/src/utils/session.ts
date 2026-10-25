@@ -6,6 +6,10 @@ import { eq } from "drizzle-orm";
 const SESSION_COOKIE = "protoxtap_session";
 const SESSION_LENGTH = 7 * 24 * 60 * 60 * 1000;
 
+function secureCookieAttribute(): string {
+  return process.env.NODE_ENV === "production" ? "; Secure" : "";
+}
+
 function hashToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
@@ -101,7 +105,7 @@ export function setSessionCookie(
 
   res.setHeader(
     "Set-Cookie",
-    `${SESSION_COOKIE}=${encodeURIComponent(token)}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${maxAge}`
+    `${SESSION_COOKIE}=${encodeURIComponent(token)}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${maxAge}${secureCookieAttribute()}`
   );
 }
 
@@ -112,6 +116,6 @@ export function clearSessionCookie(
 ) {
   res.setHeader(
     "Set-Cookie",
-    `${SESSION_COOKIE}=; HttpOnly; Path=/; SameSite=Lax; Max-Age=0`
+    `${SESSION_COOKIE}=; HttpOnly; Path=/; SameSite=Lax; Max-Age=0${secureCookieAttribute()}`
   );
 }

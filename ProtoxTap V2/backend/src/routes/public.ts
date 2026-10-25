@@ -49,7 +49,7 @@ router.get("/r/:cardCode", async (req, res) => {
     return res.redirect(card.redirectUrl);
 
   } catch (error) {
-    console.error(error);
+    console.error("Card redirect failed.");
 
     return res.status(500).send("ProtoxTap server error.");
   }

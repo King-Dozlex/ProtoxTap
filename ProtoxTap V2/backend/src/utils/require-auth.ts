@@ -1,35 +1,32 @@
-import type { Request, Response, NextFunction } from "express";
+import type { Request, RequestHandler } from "express";
 import { getSession } from "./session";
 
 export type AuthRequest = Request & {
-  session: Awaited<ReturnType<typeof getSession>>;
+  session: NonNullable<Awaited<ReturnType<typeof getSession>>>;
 };
 
-export async function requireAuth(
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction
-) {
+export const requireAuth: RequestHandler = async (
+  req,
+  res,
+  next
+): Promise<void> => {
   try {
     const session = await getSession(req);
 
     if (!session) {
-      return res.status(401).json({
+      res.status(401).json({
         error: "Authentication required.",
       });
+      return;
     }
 
-    req.session = session;
-
-    console.log("AUTH SESSION SET:", req.session);
-
+    (req as AuthRequest).session = session;
     next();
-
   } catch (error) {
-    console.error(error);
+    console.error("Authentication middleware failed.");
 
     res.status(500).json({
       error: "Authentication check failed.",
     });
   }
-}
+};

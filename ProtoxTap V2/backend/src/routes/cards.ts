@@ -14,7 +14,7 @@ router.use(requireAuth);
 
 
 // GET ALL CARDS
-router.get("/", async (_req: AuthRequest, res) => {
+router.get("/", async (_req, res) => {
   try {
     const result = await db
       .select()
@@ -24,7 +24,7 @@ router.get("/", async (_req: AuthRequest, res) => {
     res.json(result);
 
   } catch (error) {
-    console.error(error);
+    console.error("Card request failed.");
 
     res.status(500).json({
       error: "Failed to fetch cards.",
@@ -34,7 +34,7 @@ router.get("/", async (_req: AuthRequest, res) => {
 
 
 // GET SINGLE CARD
-router.get("/:id", async (req: AuthRequest, res) => {
+router.get("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
 
@@ -60,7 +60,7 @@ router.get("/:id", async (req: AuthRequest, res) => {
     res.json(result[0]);
 
   } catch (error) {
-    console.error(error);
+    console.error("Card request failed.");
 
     res.status(500).json({
       error: "Failed to fetch card.",
@@ -70,7 +70,7 @@ router.get("/:id", async (req: AuthRequest, res) => {
 
 
 // CREATE CARD
-router.post("/", async (req: AuthRequest, res) => {
+router.post("/", async (req, res) => {
   try {
     const { cardCode } = req.body;
 
@@ -92,7 +92,7 @@ router.post("/", async (req: AuthRequest, res) => {
 
 
     await createAuditLog({
-      adminUserId: req.session.adminUserId,
+      adminUserId: (req as unknown as AuthRequest).session.adminUserId,
       action: "CREATED_CARD",
       targetType: "CARD",
       targetId: result[0].id,
@@ -104,7 +104,7 @@ router.post("/", async (req: AuthRequest, res) => {
 
 
   } catch (error) {
-    console.error(error);
+    console.error("Card request failed.");
 
     res.status(500).json({
       error: "Failed to create card.",
@@ -114,7 +114,7 @@ router.post("/", async (req: AuthRequest, res) => {
 
 
 // ASSIGN CARD TO BUSINESS
-router.post("/:id/assign", async (req: AuthRequest, res) => {
+router.post("/:id/assign", async (req, res) => {
   try {
     const id = Number(req.params.id);
     const { businessId } = req.body;
@@ -206,7 +206,7 @@ router.post("/:id/assign", async (req: AuthRequest, res) => {
 
 
     await createAuditLog({
-      adminUserId: req.session.adminUserId,
+      adminUserId: (req as unknown as AuthRequest).session.adminUserId,
       action: "ASSIGNED_CARD",
       targetType: "CARD",
       targetId: id,
@@ -222,7 +222,7 @@ router.post("/:id/assign", async (req: AuthRequest, res) => {
 
 
   } catch (error) {
-    console.error(error);
+    console.error("Card request failed.");
 
     res.status(500).json({
       error: "Failed to assign card.",
@@ -232,7 +232,7 @@ router.post("/:id/assign", async (req: AuthRequest, res) => {
 
 
 // ACTIVATE CARD
-router.post("/:id/activate", async (req: AuthRequest, res) => {
+router.post("/:id/activate", async (req, res) => {
   try {
     const id = Number(req.params.id);
 
@@ -279,7 +279,7 @@ router.post("/:id/activate", async (req: AuthRequest, res) => {
 
 
     await createAuditLog({
-      adminUserId: req.session.adminUserId,
+      adminUserId: (req as unknown as AuthRequest).session.adminUserId,
       action: "ACTIVATED_CARD",
       targetType: "CARD",
       targetId: id,
@@ -294,7 +294,7 @@ router.post("/:id/activate", async (req: AuthRequest, res) => {
 
 
   } catch (error) {
-    console.error(error);
+    console.error("Card request failed.");
 
     res.status(500).json({
       error: "Failed to activate card.",
@@ -304,7 +304,7 @@ router.post("/:id/activate", async (req: AuthRequest, res) => {
 
 
 // DEACTIVATE CARD
-router.post("/:id/deactivate", async (req: AuthRequest, res) => {
+router.post("/:id/deactivate", async (req, res) => {
   try {
     const id = Number(req.params.id);
 
@@ -343,7 +343,7 @@ router.post("/:id/deactivate", async (req: AuthRequest, res) => {
 
 
     await createAuditLog({
-      adminUserId: req.session.adminUserId,
+      adminUserId: (req as unknown as AuthRequest).session.adminUserId,
       action: "DEACTIVATED_CARD",
       targetType: "CARD",
       targetId: id,
@@ -358,7 +358,7 @@ router.post("/:id/deactivate", async (req: AuthRequest, res) => {
 
 
   } catch (error) {
-    console.error(error);
+    console.error("Card request failed.");
 
     res.status(500).json({
       error: "Failed to deactivate card.",
@@ -370,11 +370,9 @@ router.post("/:id/deactivate", async (req: AuthRequest, res) => {
 // DELETE CARD
 // Default behaviour: block deletion if history exists.
 // Force deletion removes history after confirmation.
-router.delete("/:id", async (req: AuthRequest, res) => {
+router.delete("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
-    console.log("DELETE BODY:", req.body);
-
     const force = req.body?.force === true;
 
 
@@ -436,7 +434,7 @@ router.delete("/:id", async (req: AuthRequest, res) => {
 
 
     await createAuditLog({
-      adminUserId: req.session.adminUserId,
+      adminUserId: (req as unknown as AuthRequest).session.adminUserId,
       action: force ? "FORCE_DELETED_CARD" : "DELETED_CARD",
       targetType: "CARD",
       targetId: id,
@@ -456,7 +454,7 @@ router.delete("/:id", async (req: AuthRequest, res) => {
 
 
   } catch (error) {
-    console.error(error);
+    console.error("Card request failed.");
 
     res.status(500).json({
       error: "Failed to delete card.",

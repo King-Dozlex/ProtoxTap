@@ -20,7 +20,7 @@ router.get("/", async (_req, res) => {
 
     res.json(result);
   } catch (error) {
-    console.error(error);
+    console.error("Business request failed.");
 
     res.status(500).json({
       error: "Failed to fetch businesses.",
@@ -52,7 +52,7 @@ router.get("/:id", async (req, res) => {
 
     res.json(result[0]);
   } catch (error) {
-    console.error(error);
+    console.error("Business request failed.");
 
     res.status(500).json({
       error: "Failed to fetch business.",
@@ -76,13 +76,9 @@ router.post("/", async (req, res) => {
       });
     }
 
-    console.log("Looking up Google Place:", businessName);
-
     const googlePlaceId = await findGooglePlaceId(
       businessName
     );
-
-    console.log("Google Place ID result:", googlePlaceId);
 
     const result = await db
       .insert(businesses)
@@ -98,7 +94,7 @@ router.post("/", async (req, res) => {
 
     res.status(201).json(result[0]);
   } catch (error) {
-    console.error(error);
+    console.error("Business request failed.");
 
     res.status(500).json({
       error: "Failed to create business.",
@@ -155,7 +151,7 @@ router.put("/:id", async (req, res) => {
 
     res.json(result[0]);
   } catch (error) {
-    console.error(error);
+    console.error("Business request failed.");
 
     res.status(500).json({
       error: "Failed to update business.",
@@ -206,7 +202,7 @@ router.delete("/:id", async (req, res) => {
       cardsReset: resetCards.length,
     });
   } catch (error) {
-    console.error(error);
+    console.error("Business request failed.");
 
     res.status(500).json({
       error: "Failed to delete business.",

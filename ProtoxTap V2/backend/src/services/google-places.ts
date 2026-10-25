@@ -26,10 +26,7 @@ export async function findGooglePlaceId(
   );
 
   if (!response.ok) {
-    console.error(
-      "Google Places API error:",
-      await response.text()
-    );
+    console.error("Google Places API request failed.");
 
     return null;
   }

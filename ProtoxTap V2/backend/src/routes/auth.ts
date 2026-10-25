@@ -62,7 +62,7 @@ router.post("/login", async (req, res) => {
       username: user.username,
     });
   } catch (error) {
-    console.error(error);
+    console.error("Login request failed.");
 
     res.status(500).json({
       error: "Login failed.",
@@ -100,7 +100,7 @@ router.get("/me", async (req, res) => {
       user: result[0],
     });
   } catch (error) {
-    console.error(error);
+    console.error("Authentication check failed.");
 
     res.status(500).json({
       error: "Failed to check authentication.",
@@ -128,7 +128,7 @@ router.post("/logout", async (req, res) => {
       message: "Logged out successfully.",
     });
   } catch (error) {
-    console.error(error);
+    console.error("Logout request failed.");
 
     res.status(500).json({
       error: "Logout failed.",
